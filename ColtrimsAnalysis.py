@@ -610,9 +610,39 @@ class p_ke_2body:
         self.ke_tot1 = self.kex1 + self.key1 + self.kez1
         self.ke_tot2 = self.kex2 + self.key2 + self.kez2
         self.ker = self.ke_tot1 + self.ke_tot2 
-    
-    def momentum_gate(self, gate_dimen, times_sigma):
-        ''' Gates COLTRIMS data in momentum.'''
+       
+    def pgate(self, gate_dimen, prange):
+        ''' 
+        Gates COLTRIMS data in momentum. \n
+        Parameters - \n
+        gate_dimen: The dimension in which to gate momentum. This must be given
+        as a string 'X', 'Y', or 'Z'. \n
+        prange: The range of momenta to gate.
+        '''
+        if gate_dimen == 'X':
+            ptot = self.ptotx
+        if gate_dimen == 'Y':
+            ptot = self.ptoty
+        if gate_dimen == 'Z':
+            ptot = self.ptotz
+        pmin, pmax = prange
+        condition = ((ptot > pmin) & (ptot < pmax))
+        pgate = np.where(condition)
+        self.xyt_list = apply_xytgate(self.xyt_list, pgate)
+        self.__init__(self.xyt_list, self.masses, self.charges, 
+                      self.param_list, self.ion_form)
+        print('{} Ions Gated in {} Momentum'.format(len(pgate[0]), gate_dimen))
+        
+    def pgate_auto(self, gate_dimen, times_sigma):
+        ''' 
+        Automatically gates COLTRIMS data in momentum with Gaussian fit. \n
+        Parameters - \n
+        gate_dimen: The dimension in which to gate momentum. This must be given
+        as a string 'X', 'Y', or 'Z'. \n
+        times_sigma: The gate size is determined using a Gaussian fit. This
+        parameter determines the width of the gate as a multiple of the 
+        standard deviation.
+        '''
         if gate_dimen == 'X':
             ptot = self.ptotx
         if gate_dimen == 'Y':
@@ -724,11 +754,32 @@ class p_ke_3body:
         self.ke_tot2 = self.kex2 + self.key2 + self.kez2
         self.ke_tot3 = self.kex3 + self.key3 + self.kez3
         self.ker = self.ke_tot1 + self.ke_tot2 + self.ke_tot3
-    
-    def momentum_gate(self, gate_dimen, times_sigma):
+        
+    def pgate(self, gate_dimen, prange):
         ''' 
         Gates COLTRIMS data in momentum. \n
+        Parameters - \n
+        gate_dimen: The dimension in which to gate momentum. This must be given
+        as a string 'X', 'Y', or 'Z'. \n
+        prange: The range of momenta to gate.
+        '''
+        if gate_dimen == 'X':
+            ptot = self.ptotx
+        if gate_dimen == 'Y':
+            ptot = self.ptoty
+        if gate_dimen == 'Z':
+            ptot = self.ptotz
+        pmin, pmax = prange
+        condition = ((ptot > pmin) & (ptot < pmax))
+        pgate = np.where(condition)
+        self.xyt_list = apply_xytgate(self.xyt_list, pgate)
+        self.__init__(self.xyt_list, self.masses, self.charges, 
+                      self.param_list, self.ion_form)
+        print('{} Ions Gated in {} Momentum'.format(len(pgate[0]), gate_dimen))
         
+    def pgate_auto(self, gate_dimen, times_sigma):
+        ''' 
+        Automatically gates COLTRIMS data in momentum with Gaussian fit. \n
         Parameters - \n
         gate_dimen: The dimension in which to gate momentum. This must be given
         as a string 'X', 'Y', or 'Z'. \n
@@ -793,3 +844,4 @@ class p_ke_3body:
         hist1d(self.ker, ax, '{} , {}, {} Kinetic Energy'.format(self.ion1, 
                self.ion2, self.ion3), 'Kinetic Energy (eV)', 'Counts')
         ax.legend([self.ion1, self.ion2, self.ion3, 'Total KER'])
+      
