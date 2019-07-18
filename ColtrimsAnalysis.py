@@ -29,11 +29,11 @@ def hist2d(x, y, ax, title='', xlabel='', ylabel='', xbinsize='default',
     xmin, xmax = np.amin(x), np.amax(x)
     ymin, ymax = np.amin(y), np.amax(y)
     if xbinsize or ybinsize == 'default':
-        xbin_num = int(np.sqrt(len(x)))
+        xbin_num = int(np.round(np.sqrt(len(x))))
         ybin_num = xbin_num
     if xbinsize and ybinsize != 'default':
-        xbin_num = int((xmax - xmin)/xbinsize)
-        ybin_num = int((ymax - ymin)/ybinsize)
+        xbin_num = int(np.round((xmax - xmin)/xbinsize))
+        ybin_num = int(np.round((ymax - ymin)/ybinsize))
     xedge = np.linspace(xmin, xmax, xbin_num)
     yedge = np.linspace(ymin, ymax, ybin_num)
     H = histogram2d(y, x, [ybin_num, xbin_num], [(ymin, ymax), (xmin, xmax)])
@@ -63,9 +63,9 @@ def hist1d(arr, ax, title='', xlabel='', ylabel='', binsize='default',
     '''
     xmin, xmax = np.amin(arr), np.amax(arr)
     if binsize == 'default':
-        bin_num = int(np.sqrt(len(arr)))
+        bin_num = int(np.round(np.sqrt(len(arr))))
     if binsize != 'default':
-        bin_num = int((xmax - xmin)/binsize)
+        bin_num = int(np.round((xmax - xmin)/binsize))
     bin_edges = np.linspace(xmin, xmax, bin_num)
     hist = histogram1d(arr, bin_num, (xmin, xmax))
     if norm_height == True:
@@ -224,7 +224,10 @@ def poly(x, coeff):
 def view_gate2body(xyt_list, masses, charges, p_range, offset, param_list,
                       view_range, binsize='default'):
     '''
-    
+    Preview of a gate on 2-body coincidence using a polynomial fit generated 
+    from a theoretical TOF 1 versus TOF 2 channel. Use this function to fine
+    tune the gate, and then use gate_2body with the same gate parameters to 
+    actually perform the gate.
     '''
     da_to_au = 1822.8885 #conversion factor from daltons to atomic units
     mm_ns_to_au = 0.457102 #conversion factor from mm/ns to atomic units
@@ -310,6 +313,12 @@ def gate_2body(xyt_list, masses, charges, p_range, offset, param_list,
 
 def view_gate3body(xyt_list, masses, charges, p_range, offset, param_list,
                       view_range, binsize='default'):
+    '''
+    Preview of a gate on 3-body coincidence using a polynomial fit generated 
+    from a theoretical TOF 1 versus TOF 2 + TOF 3 channel. Use this function 
+    to fine-tune the gate, and then use gate_3body with the same gate 
+    parameters to actually perform the gate.
+    '''
     da_to_au = 1822.8885 #conversion factor from daltons to atomic units
     mm_ns_to_au = 0.457102 #conversion factor from mm/ns to atomic units
     tof1, x1, y1, tof2, x2, y2, tof3, x3, y3, delay, adc1, adc2 = xyt_list
@@ -350,8 +359,8 @@ def view_gate3body(xyt_list, masses, charges, p_range, offset, param_list,
 def gate_3body(xyt_list, masses, charges, p_range, offset, param_list,
                binsize='default'):
     '''
-    Gates on 2-body coincidence using a polynomial fit generated from 
-    a theoretical TOF 1 versus TOF 2 channel.
+    Gates on 3-body coincidence using a polynomial fit generated from 
+    a theoretical TOF 1 versus TOF 2 + TOF 3 channel.
     '''
     da_to_au = 1822.8885 #conversion factor from daltons to atomic units
     mm_ns_to_au = 0.457102 #conversion factor from mm/ns to atomic units
@@ -403,6 +412,52 @@ def gate_3body(xyt_list, masses, charges, p_range, offset, param_list,
     print(len(gate2[0]), 'Ions Gated')   
     return xyt_list
 
+def pipico(xyt_list, tof1range, tof2range, binsize='default'):
+    tof1 = xyt_list[0]
+    tof2 = xyt_list[3]
+    t1min, t1max = tof1range
+    t2min, t2max = tof2range
+    condition = ((tof1 > t1min) & (tof1 < t1max) & (tof2 > t2min) & 
+                 (tof2 < t2max))
+    gate = np.where(condition)
+    tof1 = tof1[gate]
+    tof2 = tof2[gate]
+    plt.style.use('dark_background')
+    fig = plt.figure()
+    ax1 = plt.subplot2grid((3,3), (1,0), rowspan=2, colspan=2, fig=fig)
+    hist2d(tof1, tof2, ax1, '', 'TOF 1 (ns)', 'TOF 2 (ns)', 
+           xbinsize=binsize, ybinsize=binsize, colorbar=False)
+    ax2 = plt.subplot2grid((3,3), (0,0), colspan=2, sharex=ax1, fig=fig)
+    hist1d(tof1, ax2, '', '', 'TOF 1 Counts', grid=False, binsize=binsize)
+    ax3 = plt.subplot2grid((3,3), (1,2), rowspan=2, sharey=ax1, fig=fig)
+    hist1d(tof2, ax3, '', 'TOF 2 Counts', '', orientation='horizontal', 
+           grid=False, binsize=binsize)
+    ax3.yaxis.tick_right()
+    fig.suptitle('PIPICO Inspection Tool', y=0.93, size=14)
+    
+def tripico(xyt_list, tof1range, tsumrange, binsize='default'):
+    tof1 = xyt_list[0]
+    tsum = xyt_list[3] + xyt_list[6]
+    t1min, t1max = tof1range
+    tsmin, tsmax = tsumrange
+    condition = ((tof1 > t1min) & (tof1 < t1max) & (tsum > tsmin) & 
+                 (tsum < tsmax))
+    gate = np.where(condition)
+    tof1 = tof1[gate]
+    tsum = tsum[gate]
+    plt.style.use('dark_background')
+    fig = plt.figure()
+    ax1 = plt.subplot2grid((3,3), (1,0), rowspan=2, colspan=2, fig=fig)
+    hist2d(tof1, tsum, ax1, '', 'TOF 1 (ns)', 'TOF 2 + TOF 3 (ns)', 
+           xbinsize=binsize, ybinsize=binsize, colorbar=False)
+    ax2 = plt.subplot2grid((3,3), (0,0), colspan=2, sharex=ax1, fig=fig)
+    hist1d(tof1, ax2, '', '', 'TOF 1 Counts', grid=False, binsize=binsize)
+    ax3 = plt.subplot2grid((3,3), (1,2), rowspan=2, sharey=ax1, fig=fig)
+    hist1d(tsum, ax3, '', 'TOF 2 + TOF 3 Counts', '', orientation='horizontal', 
+           grid=False, binsize=binsize)
+    ax3.yaxis.tick_right()
+    fig.suptitle('TRIPICO Inspection Tool', y=0.93, size=14)
+
 class allhits_analysis:
     '''
     This class is used to perform analysis on all hits data from a COLTRIMS
@@ -418,13 +473,40 @@ class allhits_analysis:
         self.xyt_list = xyt_list
         self.molec_name = molec_name
         
-    def gate_tof(self, gate_range):
+    def gate_tof(self, gate_range, plot=True):
         tof = self.xyt_list[0]
         tofmin, tofmax = gate_range
         condition = ((tof > tofmin) & (tof < tofmax))
         gate = np.where(condition)
         self.xyt_list = apply_xytgate(self.xyt_list, gate)
-        self.tof_hist1d()
+        if plot == True:
+            self.tof_hist1d()
+        
+    def gate_xytof(self, tofrange, xrange, yrange, binsize='default', 
+                   return_hist=False, plot_yield=True, ion_form='', 
+                   norm=False):
+        tof = self.xyt_list[0]
+        x = self.xyt_list[1]
+        y = self.xyt_list[2]
+        tmin, tmax = tofrange
+        xmin, xmax = xrange
+        ymin, ymax = yrange
+        condition = ((tof > tmin) & (tof < tmax) &(x > xmin) & 
+                     (x < xmax) & (y > ymin) & (y < ymax))
+        gate = np.where(condition)
+        delay = self.xyt_list[3][gate]
+        if plot_yield == True:
+            plt.style.use('default')
+            fig, ax = plt.subplots(1,1)
+            h, edge = hist1d(delay, ax, 'Yield vs. Delay {}'.format(ion_form),
+                             'Delay Index', 'Yield (counts)', output=True, 
+                             norm_height=norm, binsize=binsize)
+        if plot_yield != True:
+            h, edge = hist1d(delay, None, 'Yield vs. Delay {}'.format(
+                             ion_form), 'Delay Index', 'Yield (counts)', 
+                             output=True, norm_height=norm, binsize=binsize)
+        if return_hist == True:
+            return(h, edge)
         
     def tof_hist1d(self, binsize='default', log_scale=True):
         tof = self.xyt_list[0]
@@ -711,4 +793,3 @@ class p_ke_3body:
         hist1d(self.ker, ax, '{} , {}, {} Kinetic Energy'.format(self.ion1, 
                self.ion2, self.ion3), 'Kinetic Energy (eV)', 'Counts')
         ax.legend([self.ion1, self.ion2, self.ion3, 'Total KER'])
-      
