@@ -796,14 +796,16 @@ class p_ke_3body:
         hist, xedge = hist1d(ptot, ax=None, output=True)
         mean, sigma = gaussfit(xedge, hist, [1,0,1], ax=None, return_val=True)
         pmax = times_sigma * sigma
-        condition = ((ptot > -pmax) & (ptot < pmax))
+        condition = ((ptot > (-pmax + mean)) & (ptot < (pmax + mean)))
         pgate = np.where(condition)
         self.xyt_list = apply_xytgate(self.xyt_list, pgate)
         self.__init__(self.xyt_list, self.masses, self.charges, 
                       self.param_list, self.ion_form)
         print('{} Ions Gated in {} Momentum'.format(len(pgate[0]), gate_dimen))
     
-    def newton_plot(self, ax, xbin='default', ybin='default'):
+    def newton_plot(self, xbin='default', ybin='default'):
+        plt.style.use('default')
+        fig, ax = plt.subplots(1,1)
         dot1_2 = self.px1*self.px2 + self.py1*self.py2 + self.pz1*self.pz2
         dot1_3 = self.px1*self.px3 + self.py1*self.py3 + self.pz1*self.pz3
         pmag1 = np.sqrt(self.px1**2 + self.py1**2 + self.pz1**2)
@@ -815,9 +817,18 @@ class p_ke_3body:
         py3_newton = -np.sqrt(pmag3**2 - px3_newton**2)
         px_newton = np.concatenate((px2_newton/pmag1, px3_newton/pmag1))
         py_newton = np.concatenate((py2_newton/pmag1, py3_newton/pmag1))
-        hist2d(px_newton, py_newton, ax, 'Newton Plot', 'Relative X Momentum', 
-               'Relative Y Momentum', xbinsize=xbin, ybinsize=ybin)
-        ax.quiver(1, 0, color='w', scale=1, scale_units='x')
+        hist2d(px_newton, py_newton, ax, 
+               'Newton Plot Relative to {}'.format(self.ion1), 
+               'Relative X Momentum', 'Relative Y Momentum', xbinsize=xbin, 
+               ybinsize=ybin, color_map='viridis')
+        ax.quiver(1, 0, color='r', scale=1, scale_units='x', headlength=4,
+                  headaxislength=4)
+        ax.axhline(y=0, color='black', linewidth=0.8)
+        ax.axvline(x=0, color='black', linewidth=0.8)
+#        ax.set_aspect('equal')
+        ax.text(1.02, 0.08, self.ion1, fontsize=12)
+        ax.text(0.01, 0.93, self.ion2, fontsize=12, transform=ax.transAxes)
+        ax.text(0.01, 0.03, self.ion3, fontsize=12, transform=ax.transAxes)
         
     def common_plots(self):
         '''
