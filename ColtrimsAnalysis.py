@@ -253,8 +253,8 @@ def view_gate2body(xyt_list, masses, charges, p_range, offset, param_list,
     xyt_list = apply_xytgate(xyt_list, gate)
     tof1, x1, y1, tof2, x2, y2, delay, adc1, adc2 = xyt_list
     plt.style.use('dark_background')
-    fig, ax = plt.subplots(1, 1)
-    hist2d(tof1, tof2, ax, 'PIPICO Gate Preview', 'TOF 1 (ns)', 'TOF 2 (ns)', 
+    fig, ax = plt.subplots(1, 1, num='PIPICO Gate Inspector')
+    hist2d(tof1, tof2, ax, 'PIPICO Gate Inspector', 'TOF 1 (ns)', 'TOF 2 (ns)', 
            xbinsize=binsize, ybinsize=binsize)
     ax.plot(t1, poly(t1, coef), 'b')
     ax.plot(t1, poly(t1, coef) + offset, 'w')
@@ -290,7 +290,7 @@ def gate_2body(xyt_list, masses, charges, p_range, offset, param_list,
     tof1, x1, y1, tof2, x2, y2, delay, adc1, adc2 = xyt_list   
     
     plt.style.use('dark_background')
-    fig, ax = plt.subplots(1, 1)
+    fig, ax = plt.subplots(1, 1, num='PIPICO Pre-Gate')
     hist2d(tof1, tof2, ax, 'PIPICO Pre-Gate', 'TOF 1 (ns)', 'TOF 2 (ns)', 
            xbinsize=binsize, ybinsize=binsize)
     ax.plot(t1, poly(t1, coef), 'b')
@@ -305,7 +305,7 @@ def gate_2body(xyt_list, masses, charges, p_range, offset, param_list,
     gate2 = np.where(condition2)
     xyt_list = apply_xytgate(xyt_list, gate2)
     tof1, x1, y1, tof2, x2, y2, delay, adc1, adc2 = xyt_list
-    fig, ax = plt.subplots(1, 1)
+    fig, ax = plt.subplots(1, 1, num='PIPICO Post-Gate')
     hist2d(tof1, tof2, ax, 'PIPICO Post-Gate', 'TOF 1 (ns)', 'TOF 2 (ns)', 
            xbinsize=binsize, ybinsize=binsize)
     print(len(gate2[0]), 'Ions Gated')   
@@ -348,8 +348,8 @@ def view_gate3body(xyt_list, masses, charges, p_range, offset, param_list,
     xyt_list = apply_xytgate(xyt_list, gate)
     tof1, x1, y1, tof2, x2, y2, tof3, x3, y3, delay, adc1, adc2 = xyt_list
     plt.style.use('dark_background')
-    fig, ax = plt.subplots(1, 1)
-    hist2d(tof1, tof2+tof3, ax, 'PIPICO Gate Preview', 'TOF 1 (ns)',
+    fig, ax = plt.subplots(1, 1, num='TRIPICO Gate Inspector')
+    hist2d(tof1, tof2+tof3, ax, 'TRIPICO Gate Inspector', 'TOF 1 (ns)',
            'TOF 2 + TOF 3 (ns)', xbinsize=binsize, ybinsize=binsize)
     ax.plot(t1, poly(t1, coef), 'b')
     ax.plot(t1, poly(t1, coef) + offset, 'w')
@@ -390,8 +390,8 @@ def gate_3body(xyt_list, masses, charges, p_range, offset, param_list,
     tof1, x1, y1, tof2, x2, y2, tof3, x3, y3, delay, adc1, adc2 = xyt_list   
     
     plt.style.use('dark_background')
-    fig, ax = plt.subplots(1, 1)
-    hist2d(tof1, tof2+tof3, ax, '3-Body PIPICO Pre-Gate', 'TOF 1 (ns)', 
+    fig, ax = plt.subplots(1, 1, num='TRIPICO Pre-Gate')
+    hist2d(tof1, tof2+tof3, ax, 'TRIPICO Pre-Gate', 'TOF 1 (ns)', 
            'TOF 2 + TOF 3 (ns)', xbinsize=binsize, ybinsize=binsize)
     ax.plot(t1, poly(t1, coef), 'b')
     ax.plot(t1, poly(t1, coef) + offset, 'w')
@@ -406,8 +406,8 @@ def gate_3body(xyt_list, masses, charges, p_range, offset, param_list,
     xyt_list = apply_xytgate(xyt_list, gate2)
     tof1, x1, y1, tof2, x2, y2, tof3, x3, y3, delay, adc1, adc2 = xyt_list
     
-    fig, ax = plt.subplots(1, 1)
-    hist2d(tof1, tof2+tof3, ax, '3-Body PIPICO Post-Gate', 'TOF 1 (ns)', 
+    fig, ax = plt.subplots(1, 1, num='TRIPICO Post-Gate')
+    hist2d(tof1, tof2+tof3, ax, 'TRIPICO Post-Gate', 'TOF 1 (ns)', 
            'TOF 2 + TOF 3 (ns)', xbinsize=binsize, ybinsize=binsize)
     print(len(gate2[0]), 'Ions Gated')   
     return xyt_list
@@ -423,7 +423,7 @@ def pipico(xyt_list, tof1range, tof2range, binsize='default'):
     tof1 = tof1[gate]
     tof2 = tof2[gate]
     plt.style.use('dark_background')
-    fig = plt.figure()
+    fig = plt.figure('PIPICO Inspection Tool')
     ax1 = plt.subplot2grid((3,3), (1,0), rowspan=2, colspan=2, fig=fig)
     hist2d(tof1, tof2, ax1, '', 'TOF 1 (ns)', 'TOF 2 (ns)', 
            xbinsize=binsize, ybinsize=binsize, colorbar=False)
@@ -446,7 +446,7 @@ def tripico(xyt_list, tof1range, tsumrange, binsize='default'):
     tof1 = tof1[gate]
     tsum = tsum[gate]
     plt.style.use('dark_background')
-    fig = plt.figure()
+    fig = plt.figure('TRIPICO Inspection Tool')
     ax1 = plt.subplot2grid((3,3), (1,0), rowspan=2, colspan=2, fig=fig)
     hist2d(tof1, tsum, ax1, '', 'TOF 1 (ns)', 'TOF 2 + TOF 3 (ns)', 
            xbinsize=binsize, ybinsize=binsize, colorbar=False)
@@ -497,7 +497,8 @@ class allhits_analysis:
         delay = self.xyt_list[3][gate]
         if plot_yield == True:
             plt.style.use('default')
-            fig, ax = plt.subplots(1,1)
+            fig, ax = plt.subplots(1, 1, num='Yield vs. Delay {}'.format(
+                                   self.ion_form))
             h, edge = hist1d(delay, ax, 'Yield vs. Delay {}'.format(ion_form),
                              'Delay Index', 'Yield (counts)', output=True, 
                              norm_height=norm, binsize=binsize)
@@ -511,7 +512,7 @@ class allhits_analysis:
     def tof_hist1d(self, binsize='default', log_scale=True):
         tof = self.xyt_list[0]
         plt.style.use('default')
-        fig, ax = plt.subplots(1,1)
+        fig, ax = plt.subplots(1,1, num='1D TOF')
         hist1d(tof, ax, 'All Hits TOF Histogram {}'.format(self.molec_name),
                'Time of Flight (ns)', 'Counts', log=log_scale)
         
@@ -519,7 +520,7 @@ class allhits_analysis:
         x = self.xyt_list[1]
         y = self.xyt_list[2]
         plt.style.use('dark_background')
-        fig, ax = plt.subplots(1,1)
+        fig, ax = plt.subplots(1, 1, num='Detector Image')
         hist2d(x, y, ax, 'All Hits Detector Image - {}'.format(self.molec_name)
                , 'X Position (mm)', 'Y Position (mm)', xbinsize=binsize, 
                ybinsize=binsize)
@@ -528,7 +529,7 @@ class allhits_analysis:
         tof = self.xyt_list[0]
         x = self.xyt_list[1]
         plt.style.use('dark_background')
-        fig, ax = plt.subplots(1,1)
+        fig, ax = plt.subplots(1, 1, num='X vs. TOF')
         hist2d(tof, x, ax, 'All Hits X vs. TOF - {}'.format(self.molec_name), 
                'TOF (ns)', 'X Position (mm)', xbinsize=tofbin, ybinsize=xbin)
         
@@ -536,7 +537,7 @@ class allhits_analysis:
         tof = self.xyt_list[0]
         y = self.xyt_list[2]
         plt.style.use('dark_background')
-        fig, ax = plt.subplots(1,1)
+        fig, ax = plt.subplots(1, 1, num='Y vs. TOF')
         hist2d(tof, y, ax, 'All Hits Y vs. TOF - {}'.format(self.molec_name), 
                'TOF (ns)', 'Y Position (mm)', xbinsize=tofbin, ybinsize=ybin)
         
@@ -544,7 +545,7 @@ class allhits_analysis:
         tof = self.xyt_list[0]
         delay = self.xyt_list[3]
         plt.style.use('dark_background')
-        fig, ax = plt.subplots(1,1)
+        fig, ax = plt.subplots(1, 1, num='TOF vs. Delay')
         hist2d(delay, tof, ax, 'All Hits TOF vs. Delay - {}'.format(
                self.molec_name), 'Delay Index', 'TOF (ns)', xbinsize=delbin, 
                ybinsize=tofbin)
@@ -667,7 +668,7 @@ class p_ke_2body:
         -Kinetic energy histograms of each ion and total kinetic energy release
         '''
         plt.style.use('default')
-        fig, ax = plt.subplots(1, 3)
+        fig, ax = plt.subplots(1, 3, num='Momentum Sums')
         hist1d(self.ptotx, ax[0], 'X Momentum Sum',
                'X Momentum (a.u.)', 'Counts')
         hist1d(self.ptoty, ax[1], 'Y Momentum Sum','Y Momentum (a.u.)', '')
@@ -675,7 +676,7 @@ class p_ke_2body:
         title = self.ion1 + ' and ' + self.ion2 + ' Momentum Sums'
         fig.suptitle(title)
       
-        fig, ax = plt.subplots(1, 3)
+        fig, ax = plt.subplots(1, 3, num='Ion Kinetic Energy and KER')
         hist1d(self.ke_tot1, ax[0],'{} Kinetic Energy'.format(self.ion1),
                'Kinetic Energy (eV)','Counts')
         hist1d(self.ke_tot2, ax[1],'{} Kinetic Energy'.format(self.ion2), 
@@ -805,7 +806,7 @@ class p_ke_3body:
     
     def newton_plot(self, xbin='default', ybin='default'):
         plt.style.use('default')
-        fig, ax = plt.subplots(1,1)
+        fig, ax = plt.subplots(1, 1, num='Newton Plot')
         dot1_2 = self.px1*self.px2 + self.py1*self.py2 + self.pz1*self.pz2
         dot1_3 = self.px1*self.px3 + self.py1*self.py3 + self.pz1*self.pz3
         pmag1 = np.sqrt(self.px1**2 + self.py1**2 + self.pz1**2)
@@ -838,7 +839,7 @@ class p_ke_3body:
         -Kinetic energy histograms of each ion and total kinetic energy release
         '''
         plt.style.use('default')
-        fig, ax = plt.subplots(1, 3)
+        fig, ax = plt.subplots(1, 3, num='Momentum Sums')
         hist1d(self.ptotx, ax[0], 'X Momentum Sum',
                'X Momentum (a.u.)', 'Counts')
         hist1d(self.ptoty, ax[1], 'Y Momentum Sum','Y Momentum (a.u.)', '')
@@ -848,7 +849,7 @@ class p_ke_3body:
         fig.suptitle(title)
         
         plt.style.use('default')
-        fig, ax = plt.subplots(1, 1)
+        fig, ax = plt.subplots(1, 1, num='Ion Kinetic Energy and Total KER')
         hist1d(self.ke_tot1, ax, '','Kinetic Energy (eV)','Counts')
         hist1d(self.ke_tot2, ax, '', '', '')
         hist1d(self.ke_tot3, ax, '', '', '')
