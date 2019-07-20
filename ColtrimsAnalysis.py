@@ -510,8 +510,8 @@ class allhits_analysis:
                              ion_form),'Delay Index', 'Yield (counts)', 
                              output=True, norm_height=norm, binsize=binsize)
         if plot_yield != True:
-            h, edge = hist1d(delay, None, '', '', '', output=True, 
-                             norm_height=norm, binsize=binsize)
+            h, edge = hist1d(delay, None, output=True, norm_height=norm, 
+                             binsize=binsize)
         if return_hist == True:
             return(h, edge)
         
