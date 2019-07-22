@@ -22,7 +22,6 @@ def hist2d(x, y, ax, title='', xlabel='', ylabel='', xbinsize='default',
     default is the rounded square root of the length of the x input array.
     To correctly implement the plotting feature of this function, generate
     a matplotlib axes objects to add the plot to.
-
     Returns: If output is set to True, returns a three-item tuple containing 
     2D histogram, x bin edges, and y bin edges.
     '''
@@ -442,11 +441,11 @@ def pipico(xyt_list, tof1range, tof2range, binsize='default'):
     fig.suptitle('PIPICO Inspection Tool', y=0.93, size=14)
     
     def press(event):
-        if event.key ==' ':
+        if event.key == ' ':
             gatepipico(tof1, tof2)
     
     def gatepipico(tof1, tof2):
-        print('Gating to PIPICO Window')
+        plt.style.use('dark_background')
         t1min, t1max = ax2.get_xlim()
         t2min, t2max = ax3.get_ylim()
         condition = ((tof1 > t1min) & (tof1 < t1max) & (tof2 > t2min) & 
@@ -461,7 +460,6 @@ def pipico(xyt_list, tof1range, tof2range, binsize='default'):
         hist1d(tof2gate, ax3, '', 'TOF 2 Counts', '', 
                orientation='horizontal', grid=False, binsize=binsize)
         fig.canvas.draw()
-        
     fig.canvas.mpl_connect('key_press_event', press)
     
 def tripico(xyt_list, tof1range, tsumrange, binsize='default'):
@@ -492,7 +490,7 @@ def tripico(xyt_list, tof1range, tsumrange, binsize='default'):
             gatetripico(tof1, tsum)
     
     def gatetripico(tof1, tsum):
-        print('Gating to TRIPICO Window')
+        plt.style.use('dark_background')
         t1min, t1max = ax2.get_xlim()
         tsmin, tsmax = ax3.get_ylim()
         condition = ((tof1 > t1min) & (tof1 < t1max) & (tsum > tsmin) & 
@@ -507,7 +505,6 @@ def tripico(xyt_list, tof1range, tsumrange, binsize='default'):
         hist1d(tsumgate, ax3, '', 'TOF 2 + TOF 3 Counts', '', 
                orientation='horizontal', grid=False, binsize=binsize)
         fig.canvas.draw()
-        
     fig.canvas.mpl_connect('key_press_event', press)
 
 class allhits_analysis:
@@ -886,6 +883,7 @@ class p_ke_3body:
                   headaxislength=4)
         ax.axhline(y=0, color='black', linewidth=0.8)
         ax.axvline(x=0, color='black', linewidth=0.8)
+#        ax.set_aspect('equal')
         ax.text(1.02, 0.08, self.ion1, fontsize=12)
         ax.text(0.01, 0.93, self.ion2, fontsize=12, transform=ax.transAxes)
         ax.text(0.01, 0.03, self.ion3, fontsize=12, transform=ax.transAxes)
@@ -917,4 +915,4 @@ class p_ke_3body:
         hist1d(self.ker, ax, '{} , {}, {} Kinetic Energy'.format(self.ion1, 
                self.ion2, self.ion3), 'Kinetic Energy (eV)', 'Counts')
         ax.legend([self.ion1, self.ion2, self.ion3, 'Total KER'])
-      
+        
