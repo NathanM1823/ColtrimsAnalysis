@@ -9,6 +9,7 @@ analysis.
 """
 from matplotlib import pyplot as plt
 from matplotlib import colors
+from matplotlib.widgets import Button
 from fast_histogram import histogram2d, histogram1d
 import numpy as np
 from scipy.optimize import curve_fit
@@ -441,6 +442,29 @@ def pipico(xyt_list, tof1range, tof2range, binsize='default'):
     ax3.yaxis.tick_right()
     fig.suptitle('PIPICO Inspection Tool', y=0.93, size=14)
     
+    def press(event):
+        if event.key ==' ':
+            gatepipico(tof1, tof2)
+    
+    def gatepipico(tof1, tof2):
+        print('Gating to PIPICO Window')
+        t1min, t1max = ax2.get_xlim()
+        t2min, t2max = ax3.get_ylim()
+        condition = ((tof1 > t1min) & (tof1 < t1max) & (tof2 > t2min) & 
+                     (tof2 < t2max))
+        gate = np.where(condition)
+        tof1gate = tof1[gate]
+        tof2gate = tof2[gate]
+        ax2.clear()
+        ax3.clear()
+        hist1d(tof1gate, ax2, '', '', 'TOF 1 Counts', grid=False, 
+               binsize=binsize)
+        hist1d(tof2gate, ax3, '', 'TOF 2 Counts', '', 
+               orientation='horizontal', grid=False, binsize=binsize)
+        fig.canvas.draw()
+        
+    fig.canvas.mpl_connect('key_press_event', press)
+    
 def tripico(xyt_list, tof1range, tsumrange, binsize='default'):
     tof1 = xyt_list[0]
     tsum = xyt_list[3] + xyt_list[6]
@@ -463,6 +487,29 @@ def tripico(xyt_list, tof1range, tsumrange, binsize='default'):
            grid=False, binsize=binsize)
     ax3.yaxis.tick_right()
     fig.suptitle('TRIPICO Inspection Tool', y=0.93, size=14)
+    
+    def press(event):
+        if event.key == ' ':
+            gatetripico(tof1, tsum)
+    
+    def gatetripico(tof1, tsum):
+        print('Gating to TRIPICO Window')
+        t1min, t1max = ax2.get_xlim()
+        tsmin, tsmax = ax3.get_ylim()
+        condition = ((tof1 > t1min) & (tof1 < t1max) & (tsum > tsmin) & 
+                     (tsum < tsmax))
+        gate = np.where(condition)
+        tof1gate = tof1[gate]
+        tsumgate = tsum[gate]
+        ax2.clear()
+        ax3.clear()
+        hist1d(tof1gate, ax2, '', '', 'TOF 1 Counts', grid=False, 
+               binsize=binsize)
+        hist1d(tsumgate, ax3, '', 'TOF 2 + TOF 3 Counts', '', 
+               orientation='horizontal', grid=False, binsize=binsize)
+        fig.canvas.draw()
+        
+    fig.canvas.mpl_connect('key_press_event', press)
 
 class allhits_analysis:
     '''
