@@ -886,7 +886,6 @@ class p_ke_3body:
                   headaxislength=4)
         ax.axhline(y=0, color='black', linewidth=0.8)
         ax.axvline(x=0, color='black', linewidth=0.8)
-#        ax.set_aspect('equal')
         ax.text(1.02, 0.08, self.ion1, fontsize=12)
         ax.text(0.01, 0.93, self.ion2, fontsize=12, transform=ax.transAxes)
         ax.text(0.01, 0.03, self.ion3, fontsize=12, transform=ax.transAxes)
