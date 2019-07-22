@@ -9,7 +9,6 @@ analysis.
 """
 from matplotlib import pyplot as plt
 from matplotlib import colors
-from matplotlib.widgets import Button
 from fast_histogram import histogram2d, histogram1d
 import numpy as np
 from scipy.optimize import curve_fit
