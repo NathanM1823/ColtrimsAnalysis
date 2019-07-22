@@ -713,14 +713,17 @@ class p_ke_2body:
         self.__init__(self.xyt_list, self.masses, self.charges, 
                       self.param_list, self.ion_form)
         print('{} Ions Gated in {} Momentum'.format(len(pgate[0]), gate_dimen))
-        
-    def common_plots(self):
-        '''
-        Generates some of the most common and useful COLTRIMS data plots. \n
-        Plots generated: \n 
-        -Momentum Sums in X, Y and Z \n
-        -Kinetic energy histograms of each ion and total kinetic energy release
-        '''
+    
+    def cos_ker(self):
+        cos = self.pz1/np.sqrt(self.px1**2 + self.py1**2 + self.pz1**2)
+        plt.style.use('dark_background')
+        fig, ax = plt.subplots(1, 1)
+        fig.canvas.set_window_title('Cos(theta) vs. KER')
+        hist2d(self.ker, cos, ax, r'{}, {} Cos($\theta$) vs. KER'.format(
+               self.ion1, self.ion2), 'Kinetic Energy Release (eV)', 
+               r'Cos($\theta$)')
+            
+    def plot_psum(self):
         plt.style.use('default')
         fig, ax = plt.subplots(1, 3)
         fig.canvas.set_window_title('Momentum Sums')
@@ -730,7 +733,8 @@ class p_ke_2body:
         hist1d(self.ptotz, ax[2], 'Z Momentum Sum','Z Momentum (a.u.)', '')
         title = self.ion1 + ' and ' + self.ion2 + ' Momentum Sums'
         fig.suptitle(title)
-      
+        
+    def plot_energy(self):
         fig, ax = plt.subplots(1, 3)
         fig.canvas.set_window_title('Ion Kinetic Energy and KER')
         hist1d(self.ke_tot1, ax[0],'{} Kinetic Energy'.format(self.ion1),
@@ -887,14 +891,8 @@ class p_ke_3body:
         ax.text(1.02, 0.08, self.ion1, fontsize=12)
         ax.text(0.01, 0.93, self.ion2, fontsize=12, transform=ax.transAxes)
         ax.text(0.01, 0.03, self.ion3, fontsize=12, transform=ax.transAxes)
-        
-    def common_plots(self):
-        '''
-        Generates some of the most common and useful COLTRIMS data plots. \n
-        Plots generated: \n 
-        -Momentum Sums in X, Y and Z \n
-        -Kinetic energy histograms of each ion and total kinetic energy release
-        '''
+    
+    def plot_psum(self):
         plt.style.use('default')
         fig, ax = plt.subplots(1, 3)
         fig.canvas.set_window_title('Momentum Sums')
@@ -906,6 +904,7 @@ class p_ke_3body:
                  + self.ion3 + ' Momentum Sums')
         fig.suptitle(title)
         
+    def plot_energy(self):
         plt.style.use('default')
         fig, ax = plt.subplots(1, 1)
         fig.canvas.set_window_title('Ion Kinetic Energy and Total KER')
