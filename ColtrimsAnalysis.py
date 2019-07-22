@@ -723,26 +723,28 @@ class p_ke_2body:
                self.ion1, self.ion2), 'Kinetic Energy Release (eV)', 
                r'Cos($\theta$)')
             
-    def plot_psum(self):
+    def plot_psum(self, binsize='default'):
         plt.style.use('default')
         fig, ax = plt.subplots(1, 3)
         fig.canvas.set_window_title('Momentum Sums')
-        hist1d(self.ptotx, ax[0], 'X Momentum Sum',
-               'X Momentum (a.u.)', 'Counts')
-        hist1d(self.ptoty, ax[1], 'Y Momentum Sum','Y Momentum (a.u.)', '')
-        hist1d(self.ptotz, ax[2], 'Z Momentum Sum','Z Momentum (a.u.)', '')
+        hist1d(self.ptotx, ax[0], 'X Momentum Sum','X Momentum (a.u.)', 
+               'Counts', binsize=binsize)
+        hist1d(self.ptoty, ax[1], 'Y Momentum Sum','Y Momentum (a.u.)', '', 
+               binsize=binsize)
+        hist1d(self.ptotz, ax[2], 'Z Momentum Sum','Z Momentum (a.u.)', '', 
+               binsize=binsize)
         title = self.ion1 + ' and ' + self.ion2 + ' Momentum Sums'
         fig.suptitle(title)
         
-    def plot_energy(self):
+    def plot_energy(self, binsize='default'):
         fig, ax = plt.subplots(1, 3)
         fig.canvas.set_window_title('Ion Kinetic Energy and KER')
         hist1d(self.ke_tot1, ax[0],'{} Kinetic Energy'.format(self.ion1),
-               'Kinetic Energy (eV)','Counts')
+               'Kinetic Energy (eV)','Counts', binsize=binsize)
         hist1d(self.ke_tot2, ax[1],'{} Kinetic Energy'.format(self.ion2), 
-               'Kinetic Energy (eV)', '')
+               'Kinetic Energy (eV)', '', binsize=binsize)
         hist1d(self.ker, ax[2], 'Kinetic Energy Release',
-               'Kinetic Energy (eV))', '')
+               'Kinetic Energy (eV))', '', binsize=binsize)
                         
 class p_ke_3body:
     '''
@@ -892,26 +894,29 @@ class p_ke_3body:
         ax.text(0.01, 0.93, self.ion2, fontsize=12, transform=ax.transAxes)
         ax.text(0.01, 0.03, self.ion3, fontsize=12, transform=ax.transAxes)
     
-    def plot_psum(self):
+    def plot_psum(self, binsize='default'):
         plt.style.use('default')
         fig, ax = plt.subplots(1, 3)
         fig.canvas.set_window_title('Momentum Sums')
-        hist1d(self.ptotx, ax[0], 'X Momentum Sum',
-               'X Momentum (a.u.)', 'Counts')
-        hist1d(self.ptoty, ax[1], 'Y Momentum Sum','Y Momentum (a.u.)', '')
-        hist1d(self.ptotz, ax[2], 'Z Momentum Sum','Z Momentum (a.u.)', '')
+        hist1d(self.ptotx, ax[0], 'X Momentum Sum', 'X Momentum (a.u.)', 
+               'Counts', binsize=binsize)
+        hist1d(self.ptoty, ax[1], 'Y Momentum Sum','Y Momentum (a.u.)', '', 
+               binsize=binsize)
+        hist1d(self.ptotz, ax[2], 'Z Momentum Sum','Z Momentum (a.u.)', '', 
+               binsize=binsize)
         title = (self.ion1 + ', ' + self.ion2 + ', ' 
                  + self.ion3 + ' Momentum Sums')
         fig.suptitle(title)
         
-    def plot_energy(self):
+    def plot_energy(self, binsize='default'):
         plt.style.use('default')
         fig, ax = plt.subplots(1, 1)
         fig.canvas.set_window_title('Ion Kinetic Energy and Total KER')
-        hist1d(self.ke_tot1, ax, '','','')
-        hist1d(self.ke_tot2, ax, '', '', '')
-        hist1d(self.ke_tot3, ax, '', '', '')
+        hist1d(self.ke_tot1, ax, '', '', '', binsize=binsize)
+        hist1d(self.ke_tot2, ax, '', '', '', binsize=binsize)
+        hist1d(self.ke_tot3, ax, '', '', '', binsize=binsize)
         hist1d(self.ker, ax, '{} , {}, {} Kinetic Energy'.format(self.ion1, 
-               self.ion2, self.ion3), 'Kinetic Energy (eV)', 'Counts')
+               self.ion2, self.ion3), 'Kinetic Energy (eV)', 'Counts', 
+               binsize=binsize)
         ax.legend([self.ion1, self.ion2, self.ion3, 'Total KER'])
         
