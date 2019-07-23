@@ -146,7 +146,7 @@ def masscalc(form):
         mass += atom_dict[atoms[i]] * nums[i]
     return(mass)
 
-def masscalclist(form_list):
+def masscalc_list(form_list):
     '''Calculate molecular mass in Da for a list of molecular formulae.'''
     return[masscalc(form) for form in form_list]
         
