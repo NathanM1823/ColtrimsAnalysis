@@ -84,6 +84,75 @@ def hist1d(arr, ax, title='', xlabel='', ylabel='', binsize='default',
     if output == True:
         return(hist, bin_edges)
         
+def masscalc(form):
+    '''
+    Calculates the mass in daltons of a given molecular formula using masses 
+    from an internal dictionary of atomic mass values. \n
+    Parameters - \n
+    form: a string version of the molecular formula. Examples of input 
+    string format - 'C3H6O' (acetone), 'C2H2Br2' (dibromomethane) \n
+    Returns - \n
+    The mass of the input molecular formula in daltons
+    '''
+    H = 1.00782503223;
+    D = 2.01410177812;
+    He =  4.00260325413;
+    Li = 7.0160034366;
+    C = 12;
+    Cthir = 13.003355;
+    N = 14.00307400443;
+    O = 15.994914619;
+    F = 18.99840316273;
+    Ne =  19.9924401762;
+    S = 31.9720711744;
+    Cl = 34.968852682;
+    Ar = 39.9623831237;
+    Br = 78.9183376;
+    I = 126.9044719;
+    atom_dict = {'H' : H, 'D' : D, 'He' : He, 'Li' : Li, 'C' : C, 'Cthir' : 
+                 Cthir, 'N' : N, 'O' : O, 'F' : F, 'Ne': Ne, 'S' : S, 'Cl' : 
+                 Cl, 'Ar' : Ar, 'Br' : Br, 'I' : I}
+    cap_bool = [] 
+    for i in form: #Create list with True values at index location of uppercase
+        cap_bool.append(i.isupper())
+    cap_idx = [] #Create a list with index values of True values in cap_bool
+    for i in range(len(cap_bool)):
+        if cap_bool[i] == True:
+             cap_idx.append(i)   
+    sliced = [] #Slice string at capital letters and put slices into a list
+    for i in range(len(cap_idx)):
+        try:
+            sliced.append(form[cap_idx[i]:cap_idx[i+1]])
+        except IndexError:
+            sliced.append(form[cap_idx[i]:])   
+    atoms = []
+    nums = []   
+    for item in sliced: #For each slice, separate alpha/numeric values into
+        atom = ''       #atoms and numbers
+        num = ''
+        for i in item:
+            if i.isalpha():
+                atom += i 
+            elif i.isnumeric():
+                num += i
+        atoms.append(atom)
+        if num == '':
+            nums.append('1')
+        else:
+            nums.append(num)    
+    nums = [int(i) for i in nums] #convert string numbers to integers
+    mass = 0
+    for i in range(len(atoms)): #calculate the mass using atom_dict
+        mass += atom_dict[atoms[i]] * nums[i]
+    return(mass)
+
+def masscalc_list(form_list):
+    '''Calculate molecular mass in Da for a list of molecular formulae.'''
+    masslist = []
+    for form in form_list:
+        masslist.append(masscalc(form))
+    return(masslist)
+        
 def load_param(param_default):
     '''
     Loads COLTRIMS parameters either from a text file or default parameters.
