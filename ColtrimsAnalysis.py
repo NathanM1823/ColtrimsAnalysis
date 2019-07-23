@@ -83,6 +83,30 @@ def hist1d(arr, ax, title='', xlabel='', ylabel='', binsize='default',
             ax.set_yscale('log')
     if output == True:
         return(hist, bin_edges)
+
+def errorbars(step=1, max_min=False, same_color=True):
+    '''Add error bars to a histogram plot. Error is sqrt(number of bins).'''
+    fig = plt.gcf()
+    ax_list = fig.axes
+    for ax in ax_list:
+        lines = ax.get_lines()
+        for line in lines:
+            x = line.get_xdata()
+            y = line.get_ydata()
+            if max_min == True:
+                ymin, ymax = np.amin(y), np.amax(y)
+                min_idx = np.where(y==ymin)[0][0]
+                max_idx = np.where(y==ymax)[0][0]
+                xmin, xmax = x[min_idx], x[max_idx]
+                x, y = [xmin, xmax], [ymin, ymax]
+            error = np.sqrt(y)
+            if same_color == True:
+                color = line.get_color()
+                ax.errorbar(x, y, yerr=error, marker='.', markevery=step,
+                         errorevery=step, capsize=3, ls='none',color=color)
+            else:
+                ax.errorbar(x, y, yerr=error, marker='.', markevery=step,
+                         errorevery=step, capsize=3, ls='none')
         
 def masscalc(form):
     '''
@@ -146,7 +170,7 @@ def masscalc(form):
         mass += atom_dict[atoms[i]] * nums[i]
     return(mass)
 
-def masscalc_list(form_list):
+def masscalclist(form_list):
     '''Calculate molecular mass in Da for a list of molecular formulae.'''
     return[masscalc(form) for form in form_list]
         
@@ -955,7 +979,6 @@ class p_ke_3body:
                   headaxislength=4)
         ax.axhline(y=0, color='black', linewidth=0.8)
         ax.axvline(x=0, color='black', linewidth=0.8)
-#        ax.set_aspect('equal')
         ax.text(1.02, 0.08, self.ion1, fontsize=12)
         ax.text(0.01, 0.93, self.ion2, fontsize=12, transform=ax.transAxes)
         ax.text(0.01, 0.03, self.ion3, fontsize=12, transform=ax.transAxes)
