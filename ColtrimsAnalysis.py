@@ -71,19 +71,30 @@ def hist1d(arr, ax, title='', xlabel='', ylabel='', binsize='default',
         hist = hist/np.amax(hist)
     if ax != None:
         if orientation == 'vertical':
-            ax.plot(bin_edges, hist)
+            ax.plot(bin_edges, hist, picker=1)
         else:
-            ax.plot(hist, bin_edges)
+            ax.plot(hist, bin_edges, picker=1)
         ax.set_xlabel(xlabel)
         ax.set_ylabel(ylabel)
         ax.set_title(title)
         ax.grid(grid)
+        fig = plt.gcf()
+        fig.canvas.mpl_connect('pick_event', onpick) #add point picking
         plt.show()
         if log == True:
             ax.set_yscale('log')
     if output == True:
         return(hist, bin_edges)
-
+        
+def onpick(event):
+    '''Adds point-picking functionality to line plots, runs on-click.'''
+    thisline = event.artist
+    xdata = thisline.get_xdata()
+    ydata = thisline.get_ydata()
+    ind = event.ind
+    xpoint, ypoint = xdata[ind], ydata[ind]
+    print('Picked X: {}, Picked Y: {}'.format(xpoint, ypoint))
+   
 def errorbars(step=1, max_min=False, same_color=True):
     '''Add error bars to a histogram plot. Error is sqrt(number of bins).'''
     fig = plt.gcf()
@@ -273,6 +284,35 @@ def load_3body(filename):
         adc1 = np.concatenate((adc1, a['adc1']))
         adc2 = np.concatenate((adc2, a['adc2']))
     return[tof1, x1, y1, tof2, x2, y2, tof3, x3, y3, delay, adc1, adc2]
+
+def tof_cal(fragments, charges, tofs, covar=False):
+    da_to_au = 1822.8885 #conversion factor from daltons to atomic units
+    masses = [da_to_au * m for m in masscalclist(fragments)]
+    for i in range(len(masses)):
+        masses[i] = masses[i]/charges[i]
+    def tof_func(m_q, C, t0):
+        return C * np.sqrt(m_q) + t0
+    fit = curve_fit(tof_func, xdata=masses, ydata=tofs) #fit to function
+    C_opt, t0_opt = fit[0]
+    if covar == True:
+        pcov = fit[1]
+        return(C_opt, t0_opt, pcov)
+    else:
+        return(C_opt, t0_opt)
+            
+def test_tofcal(C, t0, fragments, charges):
+    ax = plt.gca()
+    da_to_au = 1822.8885 #conversion factor from daltons to atomic units
+    masses = [da_to_au * m for m in masscalclist(fragments)]
+    for i in range(len(masses)):
+        masses[i] = masses[i]/charges[i]
+    def tof_func(m_q, C, t0):
+        return C * np.sqrt(m_q) + t0
+    tofs = []
+    for mass in masses:
+        tofs.append(tof_func(mass, C, t0))
+    for tof in tofs:
+        ax.axvline(x=tof, linestyle='--', linewidth=1.0)
     
 def gaussfit(x, y, p0, ax, disp_sigma=True, return_val=False):
         '''
@@ -610,10 +650,11 @@ class allhits_analysis:
     
     def __init__(self, xyt_list, molec_name):
         self.xyt_list = xyt_list
+        self.tof = xyt_list[0]
         self.molec_name = molec_name
         
     def gate_tof(self, gate_range, plot=True):
-        tof = self.xyt_list[0]
+        tof = self.tof
         tofmin, tofmax = gate_range
         condition = ((tof > tofmin) & (tof < tofmax))
         gate = np.where(condition)
@@ -624,7 +665,7 @@ class allhits_analysis:
     def gate_xytof(self, tofrange, xrange, yrange, binsize='default', 
                    return_hist=False, plot_yield=True, ion_form='', 
                    norm=False):
-        tof = self.xyt_list[0]
+        tof = self.tof
         x = self.xyt_list[1]
         y = self.xyt_list[2]
         tmin, tmax = tofrange
@@ -649,7 +690,7 @@ class allhits_analysis:
             return(h, edge)
         
     def tof_hist1d(self, binsize='default', log_scale=True):
-        tof = self.xyt_list[0]
+        tof = self.tof
         plt.style.use('default')
         fig, ax = plt.subplots(1, 1)
         fig.canvas.set_window_title('1D TOF')
@@ -667,7 +708,7 @@ class allhits_analysis:
                ybinsize=binsize)
         
     def tof_x_hist2d(self, tofbin='default', xbin='default'):
-        tof = self.xyt_list[0]
+        tof = self.tof
         x = self.xyt_list[1]
         plt.style.use('dark_background')
         fig, ax = plt.subplots(1, 1)
@@ -676,7 +717,7 @@ class allhits_analysis:
                'TOF (ns)', 'X Position (mm)', xbinsize=tofbin, ybinsize=xbin)
         
     def tof_y_hist2d(self, tofbin='default', ybin='default'):
-        tof = self.xyt_list[0]
+        tof = self.tof
         y = self.xyt_list[2]
         plt.style.use('dark_background')
         fig, ax = plt.subplots(1, 1)
@@ -685,7 +726,7 @@ class allhits_analysis:
                'TOF (ns)', 'Y Position (mm)', xbinsize=tofbin, ybinsize=ybin)
         
     def tof_delay_hist2d(self, delbin='default', tofbin='default'):
-        tof = self.xyt_list[0]
+        tof = self.tof
         delay = self.xyt_list[3]
         plt.style.use('dark_background')
         fig, ax = plt.subplots(1, 1)
