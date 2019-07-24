@@ -314,6 +314,7 @@ def load_3body(filename):
     return[tof1, x1, y1, tof2, x2, y2, tof3, x3, y3, delay, adc1, adc2]
 
 def tof_cal(fragments, charges, tofs, covar=False):
+    '''Performs TOF calibration, returns values of C and t0.'''
     da_to_au = 1822.8885 #conversion factor from daltons to atomic units
     masses = [da_to_au * m for m in masscalclist(fragments)]
     for i in range(len(masses)):
@@ -329,6 +330,7 @@ def tof_cal(fragments, charges, tofs, covar=False):
         return(C_opt, t0_opt)
             
 def test_tofcal(C, t0, fragments, charges):
+    '''Tests TOF calibration parameters.'''
     ax = plt.gca()
     da_to_au = 1822.8885 #conversion factor from daltons to atomic units
     masses = [da_to_au * m for m in masscalclist(fragments)]
@@ -339,8 +341,12 @@ def test_tofcal(C, t0, fragments, charges):
     tofs = []
     for mass in masses:
         tofs.append(tof_func(mass, C, t0))
-    for tof in tofs:
-        ax.axvline(x=tof, linestyle='--', linewidth=1.0)
+    forms = formtex(fragments, charges)
+    ymin, ymax = ax.get_ylim()
+    yval = ymax * 0.5
+    for i in range(len(tofs)):
+        ax.axvline(tofs[i], linestyle='--', linewidth=1.0)
+        ax.text(tofs[i], yval, forms[i], horizontalalignment='left')
     
 def gaussfit(x, y, p0, ax, disp_sigma=True, return_val=False):
         '''
@@ -723,7 +729,7 @@ class allhits_analysis:
         fig, ax = plt.subplots(1, 1)
         fig.canvas.set_window_title('1D TOF')
         hist1d(tof, ax, 'All Hits TOF Histogram {}'.format(self.molec_name),
-               'Time of Flight (ns)', 'Counts', log=log_scale)
+               'Time of Flight (ns)', 'Counts', log=log_scale, binsize=binsize)
         
     def detector_img(self, binsize='default'):
         x = self.xyt_list[1]
