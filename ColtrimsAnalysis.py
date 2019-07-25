@@ -193,15 +193,12 @@ def formtex(form_list, charges=None):
     output = []
     ctr = 0
     for form in form_list:
-        num_loc = []
-        for char in form:
-            num_loc.append(char.isnumeric())
         rebuilt = ''
-        for i in range(len(form)):
-            if num_loc[i] == True:
-                rebuilt += ('_' + form[i])
-            if num_loc[i] == False:
-                rebuilt += form[i]
+        for i in form:
+            if i.isnumeric():
+                rebuilt += ('_' + i)
+            else:
+                rebuilt += i
         if charges != None:
             if charges[ctr] == 1:
                 rebuilt = '$' + rebuilt + '^+$'
@@ -211,7 +208,10 @@ def formtex(form_list, charges=None):
             rebuilt = '$' + rebuilt + '$' 
         ctr += 1
         output.append(rebuilt)
-    return output
+    if len(output) == 1:
+        return output[0]
+    else:
+        return output
         
 def load_param(param_default):
     '''
