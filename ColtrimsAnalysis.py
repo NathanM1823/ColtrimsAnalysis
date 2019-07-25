@@ -202,6 +202,8 @@ def formtex(form_list, charges=None):
         if charges != None:
             if charges[ctr] == 1:
                 rebuilt = '$' + rebuilt + '^+$'
+            elif charges[ctr] == 0:
+                rebuilt = '$' + rebuilt + '$'
             elif charges[ctr] != 1:
                 rebuilt = '$' + rebuilt + '^{' + str(charges[ctr]) + '+}$'
         else:
