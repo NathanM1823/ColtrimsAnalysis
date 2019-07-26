@@ -315,7 +315,7 @@ def load_3body(filename):
         adc2 = np.concatenate((adc2, a['adc2']))
     return[tof1, x1, y1, tof2, x2, y2, tof3, x3, y3, delay, adc1, adc2]
 
-def tof_cal(fragments, charges, tofs, covar=False):
+def tof_cal(fragments, charges, tofs, err=False):
     '''Performs TOF calibration, returns values of C and t0.'''
     da_to_au = 1822.8885 #conversion factor from daltons to atomic units
     masses = [da_to_au * m for m in masscalclist(fragments)]
@@ -325,11 +325,12 @@ def tof_cal(fragments, charges, tofs, covar=False):
         return C * np.sqrt(m_q) + t0
     fit = curve_fit(tof_func, xdata=masses, ydata=tofs) #fit to function
     C_opt, t0_opt = fit[0]
-    if covar == True:
+    if err == True:
         pcov = fit[1]
-        return(C_opt, t0_opt, pcov)
-    else:
-        return(C_opt, t0_opt)
+        C_err, t0_err = np.sqrt(np.diag(pcov))
+        print('C = {} +/- {}'.format(C_opt, C_err))
+        print('t0 = {} +/- {}'.format(t0_opt, t0_err))
+    return(C_opt, t0_opt)
             
 def test_tofcal(C, t0, fragments, charges):
     '''Tests TOF calibration parameters.'''
@@ -968,6 +969,9 @@ class p_ke_3body:
         self.px3 = m3 * self.vx3 * mm_ns_to_au
         self.py3 = m3 * self.vy3 * mm_ns_to_au
         self.pz3 = m3 * self.vz3 * mm_ns_to_au
+        self.p_ion1 = [self.px1, self.py1, self.pz1]
+        self.p_ion2 = [self.px2, self.py2, self.pz2]
+        self.p_ion3 = [self.px3, self.py3, self.pz3]
         self.ptotx = self.px1 + self.px2 + self.px3
         self.ptoty = self.py1 + self.py2 + self.py3
         self.ptotz = self.pz1 + self.pz2 + self.pz3
@@ -1032,33 +1036,54 @@ class p_ke_3body:
         self.__init__(self.xyt_list, self.masses, self.charges, 
                       self.param_list, self.ion_form)
         print('{} Ions Gated in {} Momentum'.format(len(pgate[0]), gate_dimen))
-    
-    def newton_plot(self, xbin='default', ybin='default'):
-        plt.style.use('default')
-        fig, ax = plt.subplots(1, 1)
-        fig.canvas.set_window_title('Newton Plot')
-        dot1_2 = self.px1*self.px2 + self.py1*self.py2 + self.pz1*self.pz2
-        dot1_3 = self.px1*self.px3 + self.py1*self.py3 + self.pz1*self.pz3
-        pmag1 = np.sqrt(self.px1**2 + self.py1**2 + self.pz1**2)
-        pmag2 = np.sqrt(self.px2**2 + self.py2**2 + self.pz2**2)
-        pmag3 = np.sqrt(self.px3**2 + self.py3**2 + self.pz3**2)
-        px2_newton = dot1_2/pmag1
-        py2_newton = np.sqrt(pmag2**2 - px2_newton**2)
-        px3_newton = dot1_3/pmag1
-        py3_newton = -np.sqrt(pmag3**2 - px3_newton**2)
-        px_newton = np.concatenate((px2_newton/pmag1, px3_newton/pmag1))
-        py_newton = np.concatenate((py2_newton/pmag1, py3_newton/pmag1))
-        hist2d(px_newton, py_newton, ax, 
-               'Newton Plot Relative to {}'.format(self.ion1), 
-               'Relative X Momentum', 'Relative Y Momentum', xbinsize=xbin, 
-               ybinsize=ybin, color_map='viridis')
-        ax.quiver(1, 0, color='r', scale=1, scale_units='x', headlength=4,
-                  headaxislength=4)
-        ax.axhline(y=0, color='black', linewidth=0.8)
-        ax.axvline(x=0, color='black', linewidth=0.8)
-        ax.text(1.02, 0.08, self.ion1, fontsize=12)
-        ax.text(0.01, 0.93, self.ion2, fontsize=12, transform=ax.transAxes)
-        ax.text(0.01, 0.03, self.ion3, fontsize=12, transform=ax.transAxes)
+        
+    def newton_plots(self, xbin='default', ybin='default'):
+        '''
+        Generates 3 Newton Plots. In each plot, one of ion's momentum is set as 
+        a unit vector on the x-axis, and the momenta of the other two ions are 
+        plotted relative to it.
+        '''
+        def newtoncalc(plot_input, xbin, ybin):
+            p_ion1, p_ion2, p_ion3, ion1, ion2, ion3 = plot_input
+            px1, py1, pz1 = p_ion1
+            px2, py2, pz2 = p_ion2
+            px3, py3, pz3 = p_ion3
+            dot1_2 = px1*px2 + py1*py2 + pz1*pz2
+            dot1_3 = px1*px3 + py1*py3 + pz1*pz3
+            pmag1 = np.sqrt(px1**2 + py1**2 + pz1**2)
+            pmag2 = np.sqrt(px2**2 + py2**2 + pz2**2)
+            pmag3 = np.sqrt(px3**2 + py3**2 + pz3**2)
+            px2_newton = dot1_2/pmag1
+            py2_newton = np.sqrt(pmag2**2 - px2_newton**2)
+            px3_newton = dot1_3/pmag1
+            py3_newton = -np.sqrt(pmag3**2 - px3_newton**2)
+            px_newton = np.concatenate((px2_newton/pmag1, px3_newton/pmag1))
+            py_newton = np.concatenate((py2_newton/pmag1, py3_newton/pmag1))
+            plt.style.use('default')
+            fig, ax = plt.subplots(1, 1)
+            title = 'Newton Plot Relative to {}'.format(ion1)
+            fig.canvas.set_window_title(title)
+            hist2d(px_newton, py_newton, ax, title, 'Relative X Momentum', 
+                   'Relative Y Momentum', xbinsize=xbin, ybinsize=ybin, 
+                   color_map='viridis')
+            ax.quiver(1, 0, color='r', scale=1, scale_units='x', headlength=4,
+                      headaxislength=4)
+            ax.axhline(y=0, color='black', linewidth=0.8)
+            ax.axvline(x=0, color='black', linewidth=0.8)
+            ax.text(1.02, 0.08, ion1, fontsize=12)
+            ax.text(0.01, 0.93, ion2, fontsize=12, transform=ax.transAxes)
+            ax.text(0.01, 0.03, ion3, fontsize=12, transform=ax.transAxes)
+            ax.set_xlim(-5, 5)
+            ax.set_ylim(-5 ,5)
+        plot1 = [self.p_ion1, self.p_ion2, self.p_ion3, self.ion1, self.ion2,
+                 self.ion3]
+        plot2 = [self.p_ion2, self.p_ion3, self.p_ion1, self.ion2, self.ion3,
+                 self.ion1]
+        plot3 = [self.p_ion3, self.p_ion1, self.p_ion2, self.ion3, self.ion1,
+                 self.ion2]
+        newtoncalc(plot1, xbin, ybin)
+        newtoncalc(plot2, xbin, ybin)
+        newtoncalc(plot3, xbin, ybin)
     
     def plot_psum(self, binsize='default'):
         plt.style.use('default')
