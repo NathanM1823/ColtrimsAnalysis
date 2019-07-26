@@ -36,14 +36,17 @@ def hist2d(x, y, ax, title='', xlabel='', ylabel='', xbinsize='default',
     xedge = np.linspace(xmin, xmax, xbin_num)
     yedge = np.linspace(ymin, ymax, ybin_num)
     H = histogram2d(y, x, [ybin_num, xbin_num], [(ymin, ymax), (xmin, xmax)])
-    img = ax.pcolorfast(xedge, yedge, H, norm=colors.LogNorm(), cmap=color_map)
     if ax != None:
+        img = ax.pcolorfast(xedge, yedge, H, norm=colors.LogNorm(), 
+                            cmap=color_map, picker=1)
         ax.set_title(title)
         ax.set_xlabel(xlabel)
         ax.set_ylabel(ylabel)
         if colorbar == True:
             cbar = plt.colorbar(img)
             cbar.ax.set_ylabel('Counts')
+        fig = plt.gcf()
+        fig.canvas.mpl_connect('button_press_event', onclick)#on mouse click
         ax.grid(grid)
         plt.show()
     if output == True:
@@ -88,12 +91,19 @@ def hist1d(arr, ax, title='', xlabel='', ylabel='', binsize='default',
         
 def onpick(event):
     '''Adds point-picking functionality to line plots, runs on-click.'''
-    thisline = event.artist
-    xdata = thisline.get_xdata()
-    ydata = thisline.get_ydata()
-    ind = event.ind
-    xpoint, ypoint = xdata[ind], ydata[ind]
-    print('Picked X: {}, Picked Y: {}'.format(xpoint, ypoint))
+    try: #if line plot and 2D image are on same plot, this exception is needed
+        thisline = event.artist
+        xdata = thisline.get_xdata()
+        ydata = thisline.get_ydata()
+        ind = event.ind
+        xpoint, ypoint = xdata[ind], ydata[ind]
+        print('Picked X: {}, Picked Y: {}'.format(xpoint, ypoint))
+    except AttributeError:
+        pass
+        
+def onclick(event):
+    '''Adds MouseEvent functionality to 2D image, runs on-click.'''
+    print('Mouse X: {}, Mouse Y: {}'.format(event.xdata, event.ydata))
    
 def errorbars(step=1, max_min=False, same_color=True):
     '''Add error bars to a histogram plot. Error is sqrt(number of bins).'''
