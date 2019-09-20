@@ -224,6 +224,16 @@ def formtex(form_list, charges=None):
         return output[0]
     else:
         return output
+
+def lineq(point_1, point_2):
+    '''
+    Returns the slope and y-intercept of the line through two input points.
+    '''
+    x1, y1 = point_1 #first point
+    x2, y2 = point_2 #second point
+    m = (y2 - y1)/(x2 - x1) #slope between the points
+    c = y1 - m*x1 #intercept of the line
+    return m, c
         
 def load_param(param_default):
     '''
@@ -706,6 +716,7 @@ class allhits_analysis:
         condition = ((tof > tofmin) & (tof < tofmax))
         gate = np.where(condition)
         self.xyt_list = apply_xytgate(self.xyt_list, gate)
+        self.tof = self.xyt_list[0]
         if plot == True:
             self.tof_hist1d()
         
