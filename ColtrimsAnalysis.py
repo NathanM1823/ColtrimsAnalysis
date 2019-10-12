@@ -259,12 +259,12 @@ def load_param(param_default):
         param_list = param_default
     return(param_list)
 
-def load_allhits(filename):
+def load_allhits(filename, num_files):
     '''Loads All-Hits COLTRIMS data, returns xyt_list used in this module.'''
     x, y, tof = [], [], []
     delay, adc1, adc2, index = [], [], [], []
     print('File Currently Loading:')
-    for file in glob.glob(filename):
+    for file in glob.glob(filename)[0:num_files]:
         print(file)
         s = '<f4'
         dt = np.dtype([('delay', s), ('x', s), ('y', s),
@@ -280,13 +280,13 @@ def load_allhits(filename):
         index = np.concatenate((index, a['index']))
     return[tof, x, y, delay, adc1, adc2, index]
     
-def load_2body(filename):
+def load_2body(filename, num_files):
     '''Loads 2-Body COLTRIMS data and returns xyt_list used in this module.'''
     x1, y1, tof1 = [], [], []
     x2, y2, tof2 = [], [], []
     delay, adc1, adc2 = [], [], []
     print('File Currently Loading:')
-    for file in glob.glob(filename):
+    for file in glob.glob(filename)[0:num_files]:
         print(file)
         s = '<f4'
         dt = np.dtype([('delay', s), ('x1', s), ('y1', s),
@@ -305,14 +305,14 @@ def load_2body(filename):
         adc2 = np.concatenate((adc2, a['adc2']))
     return[tof1, x1, y1, tof2, x2, y2, delay, adc1, adc2]
     
-def load_3body(filename):
+def load_3body(filename, num_files):
     '''Loads 3-Body COLTRIMS data and returns xyt_list used in this module.'''
     x1, y1, tof1 = [], [], []
     x2, y2, tof2 = [], [], []
     x3, y3, tof3 = [], [], []
     delay, adc1, adc2 = [], [], []
     print('File Currently Loading:')
-    for file in glob.glob(filename):
+    for file in glob.glob(filename)[0:num_files]:
         print(file)
         s = '<f4'
         dt = np.dtype([('delay', s), ('x1', s), ('y1', s),
@@ -395,6 +395,18 @@ def gaussfit(x, y, p0, ax, disp_sigma=True, return_val=False):
                 ax.text(0.01, 0.92, s=s2, fontsize=7, transform=ax.transAxes)
         if return_val == True:
             return(mean, sigma)
+            
+def intensity_calc(pz, wavelength):
+    '''
+    Calculate the intensity of the laser in W/cm^2 given a maximum drift
+    momentum in a neon Z momentum histogram. Pz must be given in a.u. and
+    wavelength in meters.
+    '''
+    wavelength = wavelength / 0.52e-10 #0.52e-10 is a conv. factor to a.u.
+    omega = 2 * np.pi * 137 / wavelength #137 is the speed of light in a.u.
+    Up = pz**2 / 4 
+    I = Up * 4 * omega**2 * 3.50e16 #3.50e16 is a conv. factor to W/cm^2
+    return I #I is our desired intensity
         
 def apply_xytgate(xyt_list, gate):
     '''Used to apply a gate to all XYT variables'''
@@ -722,7 +734,7 @@ class allhits_analysis:
         
     def gate_xytof(self, tofrange, xrange, yrange, binsize='default', 
                    return_hist=False, plot_yield=True, ion_form='', 
-                   norm=False):
+                   norm=False, gate_all=False):
         tof = self.tof
         x = self.xyt_list[1]
         y = self.xyt_list[2]
@@ -741,6 +753,9 @@ class allhits_analysis:
             h, edge = hist1d(delay, ax, 'Yield vs. Delay {}'.format(
                              ion_form),'Delay Index', 'Yield (counts)', 
                              output=True, norm_height=norm, binsize=binsize)
+        if gate_all == True:
+            self.xyt_list = apply_xytgate(self.xyt_list, gate)
+            
         if plot_yield != True:
             h, edge = hist1d(delay, None, output=True, norm_height=norm, 
                              binsize=binsize)
@@ -792,6 +807,50 @@ class allhits_analysis:
         hist2d(delay, tof, ax, 'All Hits TOF vs. Delay - {}'.format(
                self.molec_name), 'Delay Index', 'TOF (ns)', xbinsize=delbin, 
                ybinsize=tofbin)
+            
+    def p_ke(self, xyt_list, mass, charge, param_list, ion_form):
+        da_to_au = 1822.8885 #conversion factor from daltons to atomic units
+        mm_ns_to_au = 0.457102 #conversion factor from mm/ns to atomic units
+        au_to_ev = 27.211386 #conv. factor from a.u. energy to eV
+        self.xyt_list = xyt_list
+        self.mass = mass
+        self.charge = charge
+        self.param_list = param_list
+        self.ion1 = ion_form
+        self.ion_form = ion_form
+        tof1, x1, y1, delay, adc1, adc2, index = xyt_list
+        l, z0, vz0, x_jet, vx_jet, y_jet, vy_jet, C, t0 = param_list
+        m1 = da_to_au * mass
+        q1 = charge
+        self.ion1 = ion_form
+        acc1 = (2 * q1 * (l - z0)) / (m1 * C**2) #acceleration of ion
+        self.vx1 = ((x1 - (x_jet))/(tof1 - t0)) - (vx_jet)  
+        self.vy1 = ((y1 - (y_jet))/(tof1 - t0)) - (vy_jet)
+        self.vz1 = (l-z0)/(tof1-t0) - (1/2)*acc1*(tof1-t0) + vz0
+        self.px1 = m1 * self.vx1 * mm_ns_to_au
+        self.py1 = m1 * self.vy1 * mm_ns_to_au
+        self.pz1 = m1 * self.vz1 * mm_ns_to_au
+        self.kex1 = self.px1**2 / (2 * m1) * au_to_ev
+        self.key1 = self.py1**2 / (2 * m1) * au_to_ev
+        self.kez1 = self.pz1**2 / (2 * m1) * au_to_ev
+        self.ke_tot = self.kex1 + self.key1 + self.kez1
+    
+    def plot_pxyz(self, xbin):
+        plt.style.use('default')
+        fig, [ax1, ax2, ax3] = plt.subplots(1, 3)
+        fig.suptitle('{} Momentum'.format(self.ion1))
+        fig.canvas.set_window_title('{} XYZ Momentum'.format(self.ion1))
+        hist1d(self.px1, ax1, binsize=xbin)
+        hist1d(-(self.px1), ax1, 'X Momentum', 'Momentum (a.u.)', 'Counts',
+               binsize=xbin)
+        ax1.legend(['$P_x$', '$-P_x$'], loc=1)
+        hist1d(self.py1, ax2, binsize=xbin)
+        hist1d(-(self.py1), ax2, 'Y Momentum', 'Momentum (a.u.)', binsize=xbin)
+        ax2.legend(['$P_y$', '$-P_y$'], loc=1)
+        hist1d(self.pz1, ax3, binsize=xbin)
+        hist1d(-(self.pz1), ax3, 'Z Momentum', 'Momentum (a.u.)', binsize=xbin)
+        ax3.legend(['$P_z$', '$-P_z$'], loc=1)
+        
     
             
 class p_ke_2body:
@@ -993,11 +1052,11 @@ class p_ke_3body:
         self.ion_form = ion_form
         tof1, x1, y1, tof2, x2, y2, tof3, x3, y3, delay, adc1, adc2 = xyt_list
         l, z0, vz0, x_jet, vx_jet, y_jet, vy_jet, C, t0 = param_list
-        m1, m2, m3 = [da_to_au*i for i in masses]
+        self.m1, self.m2, self.m3 = [da_to_au*i for i in masses]
         q1, q2, q3 = charges
-        acc1 = (2 * q1 * (l - z0)) / (m1 * C**2) #acceleration of 1st ion
-        acc2 = (2 * q2 * (l - z0)) / (m2 * C**2) #acceleration of 2nd ion
-        acc3 = (2 * q3 * (l - z0)) / (m3 * C**2) #acceleration of 3rd ion
+        acc1 = (2 * q1 * (l - z0)) / (self.m1 * C**2) #acceleration of 1st ion
+        acc2 = (2 * q2 * (l - z0)) / (self.m2 * C**2) #acceleration of 2nd ion
+        acc3 = (2 * q3 * (l - z0)) / (self.m3 * C**2) #acceleration of 3rd ion
         self.vx1 = ((x1 - (x_jet))/(tof1 - t0)) - (vx_jet)  
         self.vy1 = ((y1 - (y_jet))/(tof1 - t0)) - (vy_jet)
         self.vz1 = (l-z0)/(tof1-t0) - (1/2)*acc1*(tof1-t0) + vz0
@@ -1007,30 +1066,30 @@ class p_ke_3body:
         self.vx3 = ((x3 - (x_jet))/(tof3 - t0)) - (vx_jet)
         self.vy3 = ((y3 - (y_jet))/(tof3 - t0)) - (vy_jet)
         self.vz3 = (l-z0)/(tof3-t0) - (1/2)*acc3*(tof3-t0) + vz0
-        self.px1 = m1 * self.vx1 * mm_ns_to_au
-        self.py1 = m1 * self.vy1 * mm_ns_to_au
-        self.pz1 = m1 * self.vz1 * mm_ns_to_au
-        self.px2 = m2 * self.vx2 * mm_ns_to_au
-        self.py2 = m2 * self.vy2 * mm_ns_to_au
-        self.pz2 = m2 * self.vz2 * mm_ns_to_au
-        self.px3 = m3 * self.vx3 * mm_ns_to_au
-        self.py3 = m3 * self.vy3 * mm_ns_to_au
-        self.pz3 = m3 * self.vz3 * mm_ns_to_au
+        self.px1 = self.m1 * self.vx1 * mm_ns_to_au
+        self.py1 = self.m1 * self.vy1 * mm_ns_to_au
+        self.pz1 = self.m1 * self.vz1 * mm_ns_to_au
+        self.px2 = self.m2 * self.vx2 * mm_ns_to_au
+        self.py2 = self.m2 * self.vy2 * mm_ns_to_au
+        self.pz2 = self.m2 * self.vz2 * mm_ns_to_au
+        self.px3 = self.m3 * self.vx3 * mm_ns_to_au
+        self.py3 = self.m3 * self.vy3 * mm_ns_to_au
+        self.pz3 = self.m3 * self.vz3 * mm_ns_to_au
         self.p_ion1 = [self.px1, self.py1, self.pz1]
         self.p_ion2 = [self.px2, self.py2, self.pz2]
         self.p_ion3 = [self.px3, self.py3, self.pz3]
         self.ptotx = self.px1 + self.px2 + self.px3
         self.ptoty = self.py1 + self.py2 + self.py3
         self.ptotz = self.pz1 + self.pz2 + self.pz3
-        self.kex1 = self.px1**2 / (2 * m1) * au_to_ev
-        self.kex2 = self.px2**2 / (2 * m2) * au_to_ev
-        self.kex3 = self.px3**2 / (2 * m3) * au_to_ev
-        self.key1 = self.py1**2 / (2 * m1) * au_to_ev
-        self.key2 = self.py2**2 / (2 * m2) * au_to_ev
-        self.key3 = self.py3**2 / (2 * m3) * au_to_ev
-        self.kez1 = self.pz1**2 / (2 * m1) * au_to_ev
-        self.kez2 = self.pz2**2 / (2 * m2) * au_to_ev
-        self.kez3 = self.pz3**2 / (2 * m3) * au_to_ev
+        self.kex1 = self.px1**2 / (2 * self.m1) * au_to_ev
+        self.kex2 = self.px2**2 / (2 * self.m2) * au_to_ev
+        self.kex3 = self.px3**2 / (2 * self.m3) * au_to_ev
+        self.key1 = self.py1**2 / (2 * self.m1) * au_to_ev
+        self.key2 = self.py2**2 / (2 * self.m2) * au_to_ev
+        self.key3 = self.py3**2 / (2 * self.m3) * au_to_ev
+        self.kez1 = self.pz1**2 / (2 * self.m1) * au_to_ev
+        self.kez2 = self.pz2**2 / (2 * self.m2) * au_to_ev
+        self.kez3 = self.pz3**2 / (2 * self.m3) * au_to_ev
         self.ke_tot1 = self.kex1 + self.key1 + self.kez1
         self.ke_tot2 = self.kex2 + self.key2 + self.kez2
         self.ke_tot3 = self.kex3 + self.key3 + self.kez3
@@ -1131,6 +1190,22 @@ class p_ke_3body:
         newtoncalc(plot1, xbin, ybin)
         newtoncalc(plot2, xbin, ybin)
         newtoncalc(plot3, xbin, ybin)
+    
+    def dalitz(self, xbin, ybin):
+        au_to_ev = 27.211386 #conv. factor from a.u. energy to eV
+        epsilon1 = self.p_ion1 / (2 * self.m1 * self.ker / au_to_ev)
+        epsilon2 = self.p_ion2 / (2 * self.m2 * self.ker / au_to_ev)
+        epsilon3 = self.p_ion3 / (2 * self.m3 * self.ker / au_to_ev)
+        x_data = (epsilon2 - epsilon1) / (3**(1/2))
+        y_data = epsilon3 - 1/3
+        fig, ax = plt.subplots(1, 1)
+        xlabel = r'$(\epsilon_2 - \epsilon_1)/\sqrt{3} $'
+        ylabel = r'$\epsilon_3 - \frac{1}{3}$'
+        hist2d(x_data, y_data, ax, 'Dalitz Plot', xlabel, ylabel, 
+               xbinsize=xbin, ybinsize=ybin, color_map='viridis')
+        ax.xaxis.label.set_size(12)
+        ax.yaxis.label.set_size(12)
+        plt.tight_layout()
     
     def plot_pxyz(self):
         plt.style.use('default')
