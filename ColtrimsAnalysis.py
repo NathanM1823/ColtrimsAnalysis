@@ -335,6 +335,154 @@ def load_3body(filename, num_files):
         adc2 = np.concatenate((adc2, a['adc2']))
     return[tof1, x1, y1, tof2, x2, y2, tof3, x3, y3, delay, adc1, adc2]
 
+def load_and_gate2body(filename, masses, charges, p_range, offset, param_list,
+                       num_files):
+    '''
+    Loads 2-Body COLTRIMS data and returns xyt_list used in this module. This
+    is done for multiple OUT files, and each file loaded is gated to the 
+    desired channel.
+    '''
+    x1_all, y1_all, tof1_all = [], [], []
+    x2_all, y2_all, tof2_all = [], [], []
+    delay_all, adc1_all, adc2_all = [], [], []
+    
+    da_to_au = 1822.8885 #conversion factor from daltons to atomic units
+    mm_ns_to_au = 0.457102 #conversion factor from mm/ns to atomic units
+    l, z0, vz0, x_jet, vx_jet, y_jet, vy_jet, C, t0 = param_list
+    m1, m2 = [da_to_au*i for i in masses]
+    q1, q2 = charges
+    pmin, pmax = p_range
+    acc1 = (2 * q1 * (l - z0)) / (m1 * C**2) #acceleration of 1st ion
+    acc2 = (2 * q2 * (l - z0)) / (m2 * C**2) #acceleration of 2nd ion
+    p1 = np.linspace(pmin, pmax, 200)
+    p2 = -p1
+    v1 = p1/m1/mm_ns_to_au
+    v2 = p2/m2/mm_ns_to_au
+    t1 = (-(v1-vz0) + np.sqrt((v1-vz0)**2 + 2*acc1*(l - z0)))/acc1 + t0 #TOF 1st ion
+    t2 = (-(v2-vz0) + np.sqrt((v2-vz0)**2 + 2*acc2*(l - z0)))/acc2 + t0 #TOF 2nd ion
+    coef = np.polyfit(t1, t2, deg=4)
+    
+    print('File Currently Loading:')
+    for file in glob.glob(filename)[0:num_files]:
+        print(file)
+        s = '<f4'
+        dt = np.dtype([('delay', s), ('x1', s), ('y1', s),
+                       ('tof1', s), ('x2', s), ('y2', s),
+                       ('tof2', s), ('adc1', s), ('adc2', s),
+                       ('index', s)])
+        a = np.fromfile(file, dtype=dt, count=-1)
+        xyt_list = [a['tof1'], a['x1'], a['y1'], a['tof2'], a['x2'], a['y2'], 
+                    a['delay'], a['adc1'], a['adc2']]
+        tof1, x1, y1, tof2, x2, y2, delay, adc1, adc2 = xyt_list
+        
+        condition1 = ((tof1 > t1[-1]) & (tof1 < t1[0])
+                        & (tof2 > t2[0]) & (tof2 < t2[-1])) #Preliminary gate
+        gate1 = np.where(condition1) 
+        xyt_list = apply_xytgate(xyt_list, gate1)
+        tof1, x1, y1, tof2, x2, y2, delay, adc1, adc2 = xyt_list
+        polytof2 = poly(tof1, coef)
+        polyupper = polytof2 + offset
+        polylower = polytof2 - offset
+        condition2 = ((tof2 >= polylower) & (tof2 <= polyupper)) #Second gate
+        gate2 = np.where(condition2)
+        xyt_list = apply_xytgate(xyt_list, gate2)
+        print(len(gate2[0]), 'Ions Gated') 
+        
+        tof1, x1, y1, tof2, x2, y2, delay, adc1, adc2 = xyt_list
+        x1_all = np.concatenate((x1_all, x1))
+        y1_all = np.concatenate((y1_all, y1))
+        tof1_all = np.concatenate((tof1_all, tof1))
+        x2_all = np.concatenate((x2_all, x2))
+        y2_all = np.concatenate((y2_all, y2))
+        tof2_all = np.concatenate((tof2_all, tof2))
+        delay_all = np.concatenate((delay_all, delay))
+        adc1_all = np.concatenate((adc1_all, adc1))
+        adc2_all = np.concatenate((adc2_all, adc2))
+    
+
+    return[tof1_all, x1_all, y1_all, tof2_all, x2_all, y2_all, delay_all, 
+           adc1_all, adc2_all]
+    
+def load_and_gate3body(filename, masses, charges, p_range, offset, param_list,
+                       num_files):
+    '''
+    Loads 2-Body COLTRIMS data and returns xyt_list used in this module. This
+    is done for multiple OUT files, and each file loaded is gated to the 
+    desired channel.
+    '''
+    x1_all, y1_all, tof1_all = [], [], []
+    x2_all, y2_all, tof2_all = [], [], []
+    x3_all, y3_all, tof3_all = [], [], []
+    delay_all, adc1_all, adc2_all = [], [], []
+    
+    da_to_au = 1822.8885 #conversion factor from daltons to atomic units
+    mm_ns_to_au = 0.457102 #conversion factor from mm/ns to atomic units
+    l, z0, vz0, x_jet, vx_jet, y_jet, vy_jet, C, t0 = param_list
+    m1, m2, m3 = [da_to_au*i for i in masses]
+    q1, q2, q3 = charges
+    pmin, pmax = p_range
+    acc1 = (2 * q1 * (l - z0)) / (m1 * C**2) #acceleration of 1st ion
+    acc2 = (2 * q2 * (l - z0)) / (m2 * C**2) #acceleration of 2nd ion
+    acc3 = (2 * q3 * (l - z0)) / (m3 * C**2) #acceleration of 3rd ion
+    p1 = np.linspace(pmin, pmax, 200)
+    p2 = -p1
+    p3 = 0
+    v1 = p1/m1/mm_ns_to_au
+    v2 = p2/m2/mm_ns_to_au
+    v3 = p3/m3/mm_ns_to_au
+    t1 = (-(v1-vz0) + np.sqrt((v1-vz0)**2 + 2*acc1*(l - z0)))/acc1 + t0 #TOF 1st ion
+    t2 = (-(v2-vz0) + np.sqrt((v2-vz0)**2 + 2*acc2*(l - z0)))/acc2 + t0 #TOF 2nd ion
+    t3 = (-(v3-vz0) + np.sqrt((v3-vz0)**2 + 2*acc3*(l - z0)))/acc3 + t0 #TOF 3rd ion
+    tsum = t2 + t3
+    coef = np.polyfit(t1, tsum, deg=4)
+    
+    print('File Currently Loading:')
+    for file in glob.glob(filename)[0:num_files]:
+        print(file)
+        s = '<f4'
+        dt = np.dtype([('delay', s), ('x1', s), ('y1', s),
+                       ('tof1', s), ('x2', s), ('y2', s),
+                       ('tof2', s), ('x3', s), ('y3', s),
+                       ('tof3', s), ('adc1', s), ('adc2', s),
+                       ('index', s)])
+        a = np.fromfile(file, dtype=dt, count=-1)
+        xyt_list = [a['tof1'], a['x1'], a['y1'], a['tof2'], a['x2'], a['y2'], 
+                    a['tof3'], a['x3'], a['y3'],a['delay'], a['adc1'], 
+                    a['adc2']]
+        tof1, x1, y1, tof2, x2, y2, tof3, x3, y3, delay, adc1, adc2 = xyt_list   
+        
+        condition1 = ((tof1 > t1[-1]) & (tof1 < t1[0]) & (tof2+tof3 > tsum[0]) 
+                  & (tof2+tof3 < tsum[-1])) #Preliminary gate
+        gate1 = np.where(condition1) 
+        xyt_list = apply_xytgate(xyt_list, gate1)
+        tof1, x1, y1, tof2, x2, y2, tof3, x3, y3, delay, adc1, adc2 = xyt_list 
+        polytsum = poly(tof1, coef)
+        polyupper = polytsum + offset
+        polylower = polytsum - offset                   #2nd gate
+        condition2 = ((tof2+tof3 >= polylower) & (tof2+tof3 <= polyupper))
+        gate2 = np.where(condition2)
+        xyt_list = apply_xytgate(xyt_list, gate2)
+        tof1, x1, y1, tof2, x2, y2, tof3, x3, y3, delay, adc1, adc2 = xyt_list
+        print(len(gate2[0]), 'Ions Gated') 
+        
+      
+        x1_all = np.concatenate((x1_all, x1))
+        y1_all = np.concatenate((y1_all, y1))
+        tof1_all = np.concatenate((tof1_all, tof1))
+        x2_all = np.concatenate((x2_all, x2))
+        y2_all = np.concatenate((y2_all, y2))
+        tof2_all = np.concatenate((tof2_all, tof2))
+        x3_all = np.concatenate((x3_all, x3))
+        y3_all = np.concatenate((y3_all, y3))
+        tof3_all = np.concatenate((tof3_all, tof3))
+        delay_all = np.concatenate((delay_all, delay))
+        adc1_all = np.concatenate((adc1_all, adc1))
+        adc2_all = np.concatenate((adc2_all, adc2))
+    
+
+    return[tof1_all, x1_all, y1_all, tof2_all, x2_all, y2_all, tof3_all, 
+           x3_all, y3_all, delay_all, adc1_all, adc2_all]
+    
 def tof_cal(fragments, charges, tofs, err=False):
     '''Performs TOF calibration, returns values of C and t0.'''
     da_to_au = 1822.8885 #conversion factor from daltons to atomic units
@@ -573,7 +721,7 @@ def gate_3body(xyt_list, masses, charges, p_range, offset, param_list,
     pmin, pmax = p_range
     acc1 = (2 * q1 * (l - z0)) / (m1 * C**2) #acceleration of 1st ion
     acc2 = (2 * q2 * (l - z0)) / (m2 * C**2) #acceleration of 2nd ion
-    acc3 = (2 * q3 * (l - z0)) / (m3 * C**2) #acceleration of 2nd ion
+    acc3 = (2 * q3 * (l - z0)) / (m3 * C**2) #acceleration of 3rd ion
     p1 = np.linspace(pmin, pmax, 200)
     p2 = -p1
     p3 = 0
@@ -850,8 +998,16 @@ class allhits_analysis:
         hist1d(self.pz1, ax3, binsize=xbin)
         hist1d(-(self.pz1), ax3, 'Z Momentum', 'Momentum (a.u.)', binsize=xbin)
         ax3.legend(['$P_z$', '$-P_z$'], loc=1)
-        
     
+    def plot_pz(self, xbin, return_hist=False):
+        plt.style.use('default')
+        fig, ax = plt.subplots(1, 1)
+        fig.canvas.set_window_title('{} Z Momentum'.format(self.ion1))
+        hist, edges = hist1d(self.pz1, ax,'{} Z Momentum'.format(self.ion1), 
+               'Momentum (a.u.)', 'Counts', binsize=xbin, output=True)
+        if return_hist == True:
+            return(hist, edges)
+            
             
 class p_ke_2body:
     '''
@@ -1018,7 +1174,7 @@ class p_ke_2body:
         hist1d(self.ke_tot2, ax[1],'{} Kinetic Energy'.format(self.ion2), 
                'Kinetic Energy (eV)', '', binsize=binsize)
         hist1d(self.ker, ax[2], 'Kinetic Energy Release',
-               'Kinetic Energy (eV))', '', binsize=binsize)
+               'Kinetic Energy (eV)', '', binsize=binsize)
                         
 class p_ke_3body:
     '''
