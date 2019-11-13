@@ -1348,10 +1348,9 @@ class p_ke_3body:
         newtoncalc(plot3, xbin, ybin)
     
     def dalitz(self, xbin, ybin):
-        au_to_ev = 27.211386 #conv. factor from a.u. energy to eV
-        epsilon1 = self.p_ion1 / (2 * self.m1 * self.ker / au_to_ev)
-        epsilon2 = self.p_ion2 / (2 * self.m2 * self.ker / au_to_ev)
-        epsilon3 = self.p_ion3 / (2 * self.m3 * self.ker / au_to_ev)
+        epsilon1 = self.ke_tot1 / self.ker
+        epsilon2 = self.ke_tot2 / self.ker
+        epsilon3 = self.ke_tot3 / self.ker
         x_data = (epsilon2 - epsilon1) / (3**(1/2))
         y_data = epsilon3 - 1/3
         fig, ax = plt.subplots(1, 1)
