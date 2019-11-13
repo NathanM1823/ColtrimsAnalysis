@@ -1354,6 +1354,7 @@ class p_ke_3body:
         x_data = (epsilon2 - epsilon1) / (3**(1/2))
         y_data = epsilon3 - 1/3
         fig, ax = plt.subplots(1, 1)
+        fig.canvas.set_window_title('Dalitz Plot')
         xlabel = r'$(\epsilon_2 - \epsilon_1)/\sqrt{3} $'
         ylabel = r'$\epsilon_3 - \frac{1}{3}$'
         hist2d(x_data, y_data, ax, 'Dalitz Plot', xlabel, ylabel, 
