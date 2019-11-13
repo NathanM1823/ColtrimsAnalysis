@@ -12,7 +12,7 @@ from matplotlib.backends.backend_tkagg import (
     FigureCanvasTkAgg, NavigationToolbar2Tk)
 from matplotlib.figure import Figure
 import tkinter as tk
-from coltrims import hist1d
+from ColtrimsAnalysis import hist1d
 import numpy as np
 from scipy.optimize import curve_fit
 

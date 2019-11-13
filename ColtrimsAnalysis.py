@@ -1353,6 +1353,7 @@ class p_ke_3body:
         epsilon3 = self.ke_tot3 / self.ker
         x_data = (epsilon2 - epsilon1) / (3**(1/2))
         y_data = epsilon3 - 1/3
+        plt.style.use('default')
         fig, ax = plt.subplots(1, 1)
         fig.canvas.set_window_title('Dalitz Plot')
         xlabel = r'$(\epsilon_2 - \epsilon_1)/\sqrt{3} $'
