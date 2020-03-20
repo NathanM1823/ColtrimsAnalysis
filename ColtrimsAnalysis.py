@@ -13,6 +13,7 @@ from fast_histogram import histogram2d, histogram1d
 import numpy as np
 from scipy.optimize import curve_fit
 import glob
+import os
 
 def hist2d(x, y, ax, title='', xlabel='', ylabel='', xbinsize='default',
            ybinsize='default', colorbar=True, grid=False, output=False, 
@@ -284,7 +285,7 @@ def load_2body(filename, num_files):
     '''Loads 2-Body COLTRIMS data and returns xyt_list used in this module.'''
     x1, y1, tof1 = [], [], []
     x2, y2, tof2 = [], [], []
-    delay, adc1, adc2 = [], [], []
+    delay, adc1, adc2, index = [], [], [], []
     print('File Currently Loading:')
     for file in glob.glob(filename)[0:num_files]:
         print(file)
@@ -303,14 +304,15 @@ def load_2body(filename, num_files):
         delay = np.concatenate((delay, a['delay']))
         adc1 = np.concatenate((adc1, a['adc1']))
         adc2 = np.concatenate((adc2, a['adc2']))
-    return[tof1, x1, y1, tof2, x2, y2, delay, adc1, adc2]
+        index = np.concatenate((index, a['index']))
+    return[tof1, x1, y1, tof2, x2, y2, delay, adc1, adc2, index]
     
 def load_3body(filename, num_files):
     '''Loads 3-Body COLTRIMS data and returns xyt_list used in this module.'''
     x1, y1, tof1 = [], [], []
     x2, y2, tof2 = [], [], []
     x3, y3, tof3 = [], [], []
-    delay, adc1, adc2 = [], [], []
+    delay, adc1, adc2, index = [], [], [], []
     print('File Currently Loading:')
     for file in glob.glob(filename)[0:num_files]:
         print(file)
@@ -333,7 +335,8 @@ def load_3body(filename, num_files):
         delay = np.concatenate((delay, a['delay']))
         adc1 = np.concatenate((adc1, a['adc1']))
         adc2 = np.concatenate((adc2, a['adc2']))
-    return[tof1, x1, y1, tof2, x2, y2, tof3, x3, y3, delay, adc1, adc2]
+        index = np.concatenate((index, a['index']))
+    return[tof1, x1, y1, tof2, x2, y2, tof3, x3, y3, delay, adc1, adc2, index]
 
 def load_and_gate2body(filename, masses, charges, p_range, offset, param_list,
                        num_files):
@@ -577,7 +580,7 @@ def view_gate2body(xyt_list, masses, charges, p_range, offset, param_list,
     '''
     da_to_au = 1822.8885 #conversion factor from daltons to atomic units
     mm_ns_to_au = 0.457102 #conversion factor from mm/ns to atomic units
-    tof1, x1, y1, tof2, x2, y2, delay, adc1, adc2 = xyt_list
+    tof1, x1, y1, tof2, x2, y2, delay, adc1, adc2, index = xyt_list
     l, z0, vz0, x_jet, vx_jet, y_jet, vy_jet, C, t0 = param_list
     m1, m2 = [da_to_au*i for i in masses]
     q1, q2 = charges
@@ -597,7 +600,7 @@ def view_gate2body(xyt_list, masses, charges, p_range, offset, param_list,
     condition = ((tof1 > xmin)&(tof1 < xmax)&(tof2 > ymin)&(tof2 < ymax))
     gate = np.where(condition)
     xyt_list = apply_xytgate(xyt_list, gate)
-    tof1, x1, y1, tof2, x2, y2, delay, adc1, adc2 = xyt_list
+    tof1, x1, y1, tof2, x2, y2, delay, adc1, adc2, index = xyt_list
     plt.style.use('dark_background')
     fig, ax = plt.subplots(1, 1)
     fig.canvas.set_window_title('PIPICO Gate Inspector')
@@ -616,7 +619,7 @@ def gate_2body(xyt_list, masses, charges, p_range, offset, param_list,
     '''
     da_to_au = 1822.8885 #conversion factor from daltons to atomic units
     mm_ns_to_au = 0.457102 #conversion factor from mm/ns to atomic units
-    tof1, x1, y1, tof2, x2, y2, delay, adc1, adc2 = xyt_list
+    tof1, x1, y1, tof2, x2, y2, delay, adc1, adc2, index = xyt_list
     l, z0, vz0, x_jet, vx_jet, y_jet, vy_jet, C, t0 = param_list
     m1, m2 = [da_to_au*i for i in masses]
     q1, q2 = charges
@@ -634,7 +637,7 @@ def gate_2body(xyt_list, masses, charges, p_range, offset, param_list,
     & (tof2 > t2[0]) & (tof2 < t2[-1])) #Preliminary gate
     gate1 = np.where(condition1) 
     xyt_list = apply_xytgate(xyt_list, gate1)
-    tof1, x1, y1, tof2, x2, y2, delay, adc1, adc2 = xyt_list   
+    tof1, x1, y1, tof2, x2, y2, delay, adc1, adc2, index = xyt_list   
     
     plt.style.use('dark_background')
     fig, ax = plt.subplots(1, 1)
@@ -652,7 +655,7 @@ def gate_2body(xyt_list, masses, charges, p_range, offset, param_list,
     condition2 = ((tof2 >= polylower) & (tof2 <= polyupper)) #Second gate
     gate2 = np.where(condition2)
     xyt_list = apply_xytgate(xyt_list, gate2)
-    tof1, x1, y1, tof2, x2, y2, delay, adc1, adc2 = xyt_list
+    tof1, x1, y1, tof2, x2, y2, delay, adc1, adc2, index = xyt_list
     fig, ax = plt.subplots(1, 1)
     fig.canvas.set_window_title('PIPICO Post-Gate')
     hist2d(tof1, tof2, ax, 'PIPICO Post-Gate', 'TOF 1 (ns)', 'TOF 2 (ns)', 
@@ -670,7 +673,7 @@ def view_gate3body(xyt_list, masses, charges, p_range, offset, param_list,
     '''
     da_to_au = 1822.8885 #conversion factor from daltons to atomic units
     mm_ns_to_au = 0.457102 #conversion factor from mm/ns to atomic units
-    tof1, x1, y1, tof2, x2, y2, tof3, x3, y3, delay, adc1, adc2 = xyt_list
+    tof1, x1, y1, tof2, x2, y2, tof3, x3, y3, delay, adc1, adc2, index = xyt_list
     l, z0, vz0, x_jet, vx_jet, y_jet, vy_jet, C, t0 = param_list
     m1, m2, m3 = [da_to_au*i for i in masses]
     q1, q2, q3 = charges
@@ -695,7 +698,7 @@ def view_gate3body(xyt_list, masses, charges, p_range, offset, param_list,
     condition = ((tof1 > xmin)&(tof1 < xmax)&(tof2+tof3 > ymin)&(tof2+tof3 < ymax))
     gate = np.where(condition)
     xyt_list = apply_xytgate(xyt_list, gate)
-    tof1, x1, y1, tof2, x2, y2, tof3, x3, y3, delay, adc1, adc2 = xyt_list
+    tof1, x1, y1, tof2, x2, y2, tof3, x3, y3, delay, adc1, adc2, index = xyt_list
     plt.style.use('dark_background')
     fig, ax = plt.subplots(1, 1)
     fig.canvas.set_window_title('TRIPICO Gate Inspector')
@@ -714,7 +717,7 @@ def gate_3body(xyt_list, masses, charges, p_range, offset, param_list,
     '''
     da_to_au = 1822.8885 #conversion factor from daltons to atomic units
     mm_ns_to_au = 0.457102 #conversion factor from mm/ns to atomic units
-    tof1, x1, y1, tof2, x2, y2, tof3, x3, y3, delay, adc1, adc2 = xyt_list
+    tof1, x1, y1, tof2, x2, y2, tof3, x3, y3, delay, adc1, adc2, index = xyt_list
     l, z0, vz0, x_jet, vx_jet, y_jet, vy_jet, C, t0 = param_list
     m1, m2, m3 = [da_to_au*i for i in masses]
     q1, q2, q3 = charges
@@ -737,7 +740,7 @@ def gate_3body(xyt_list, masses, charges, p_range, offset, param_list,
                   & (tof2+tof3 < tsum[-1])) #Preliminary gate
     gate1 = np.where(condition1) 
     xyt_list = apply_xytgate(xyt_list, gate1)
-    tof1, x1, y1, tof2, x2, y2, tof3, x3, y3, delay, adc1, adc2 = xyt_list   
+    tof1, x1, y1, tof2, x2, y2, tof3, x3, y3, delay, adc1, adc2, index = xyt_list   
     
     plt.style.use('dark_background')
     fig, ax = plt.subplots(1, 1)
@@ -755,7 +758,7 @@ def gate_3body(xyt_list, masses, charges, p_range, offset, param_list,
     condition2 = ((tof2+tof3 >= polylower) & (tof2+tof3 <= polyupper))#2nd gate
     gate2 = np.where(condition2)
     xyt_list = apply_xytgate(xyt_list, gate2)
-    tof1, x1, y1, tof2, x2, y2, tof3, x3, y3, delay, adc1, adc2 = xyt_list
+    tof1, x1, y1, tof2, x2, y2, tof3, x3, y3, delay, adc1, adc2, index = xyt_list
     
     fig, ax = plt.subplots(1, 1)
     fig.canvas.set_window_title('TRIPICO Post-Gate')
@@ -1016,7 +1019,7 @@ class p_ke_2body:
     experiment. The data fed into this class must be 2-body coincidence data.\n
     Parameters - \n
     xyt_list: list containing COLTRIMS data in the following format [tof1, x1, 
-    y1, tof2, x2, y2, delay, adc1, adc2] \n
+    y1, tof2, x2, y2, delay, adc1, adc2, index] \n
     masses: list containing the masses of the two ions in the format [mass1, 
     mass2]. The masses of the ions must be given in Daltons. \n
     charges: list containing the charges of the two ions in the format 
@@ -1038,7 +1041,7 @@ class p_ke_2body:
         self.param_list = param_list
         self.ion1, self.ion2 = ion_form
         self.ion_form = ion_form
-        tof1, x1, y1, tof2, x2, y2, delay, adc1, adc2 = xyt_list
+        tof1, x1, y1, tof2, x2, y2, delay, adc1, adc2, index = xyt_list
         l, z0, vz0, x_jet, vx_jet, y_jet, vy_jet, C, t0 = param_list
         m1, m2 = [da_to_au*i for i in masses]
         q1, q2 = charges
@@ -1175,7 +1178,24 @@ class p_ke_2body:
                'Kinetic Energy (eV)', '', binsize=binsize)
         hist1d(self.ker, ax[2], 'Kinetic Energy Release',
                'Kinetic Energy (eV)', '', binsize=binsize)
-                        
+        
+    def save_frags(self, directory, file):
+        if not os.path.exists(file+'/Fragments'):
+            os.makedirs(file+'/Fragments')
+        tof1, x1, y1, tof2, x2, y2, delay, adc1, adc2, index = self.xyt_list
+        xyt_all = np.zeros((tof1.size, 10))
+        xyt_all[:,0] = delay
+        xyt_all[:,1] = x1
+        xyt_all[:,2] = y1
+        xyt_all[:,3] = tof1
+        xyt_all[:,4] = x2
+        xyt_all[:,5] = y2
+        xyt_all[:,6] = tof2
+        xyt_all[:,7] = adc1
+        xyt_all[:,8] = adc2
+        xyt_all[:,9] = index
+        np.save(directory + '/Fragments/' + file, xyt_all)
+        
 class p_ke_3body:
     '''
     This class is used to perform varius momentum and energy analysis
@@ -1183,7 +1203,7 @@ class p_ke_3body:
     experiment. The data fed into this class must be 3-body coincidence data.\n
     Parameters - \n
     xyt_list: list containing COLTRIMS data in the following format [tof1, x1, 
-    y1, tof2, x2, y2, tof3, x3, y3, delay, adc1, adc2] \n
+    y1, tof2, x2, y2, tof3, x3, y3, delay, adc1, adc2, index] \n
     masses: list containing the masses of the two ions in the format [mass1, 
     mass2, mass3]. The masses of the ions must be given in Daltons. \n
     charges: list containing the charges of the two ions in the format 
@@ -1206,7 +1226,7 @@ class p_ke_3body:
         self.param_list = param_list
         self.ion1, self.ion2, self.ion3 = ion_form
         self.ion_form = ion_form
-        tof1, x1, y1, tof2, x2, y2, tof3, x3, y3, delay, adc1, adc2 = xyt_list
+        tof1, x1, y1, tof2, x2, y2, tof3, x3, y3, delay, adc1, adc2, index = xyt_list
         l, z0, vz0, x_jet, vx_jet, y_jet, vy_jet, C, t0 = param_list
         self.m1, self.m2, self.m3 = [da_to_au*i for i in masses]
         q1, q2, q3 = charges
