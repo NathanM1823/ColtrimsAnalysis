@@ -28,6 +28,8 @@ k = 8.9875517923e9 #Coulomb force constant
 V = 2000 #spectrometer voltage
 L = 0.22 #spectrometer length in meters
 
+vibmax = 1.16e-10 * 0.05 #maximum vibration amplitude for each fragment
+
 r10 = np.array([0, 0, 0])  #fragment intial position vectors (x, y, z)
 r20 = np.array([-1.16e-10, 0, 0]) 
 r30 = np.array([1.16e-10, 0, 0]) 
