@@ -127,7 +127,7 @@ class ParameterGUI:
         ax.text(0.01, 0.92, s=s2, fontsize=7, transform=ax.transAxes)
        
     def plot(self):
-        tof1,x1,y1,tof2,x2,y2,tof3,x3,y3,delay,adc1,adc2 = self.xyt_list
+        tof1,x1,y1,tof2,x2,y2,tof3,x3,y3,delay,adc1,adc2,index = self.xyt_list
         l = float(self.l_entry.get())
         z0 = float(self.z0_entry.get())
         vz0 = float(self.vz0_entry.get())

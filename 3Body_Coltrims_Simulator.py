@@ -11,14 +11,14 @@ from scipy.integrate import solve_ivp
 from numba import jit
 import os
 
-file = os.getcwd()+'/test' #file to export data to
+file = 'S:/JRM_ARgroup/Nathan/Coltrims Sim/CO2' #file to export data to
 
-num = 1000 #number of molecules to simulate
+num = 10000 #number of molecules to simulate
 
 m1 = 12.011 #fragment masses
-m2 = 12.011 
-m3 = 12.011
-amu_to_kg = 1 / 6.0221409e+23 / 1000
+m2 = 15.999 
+m3 = 15.999
+amu_to_kg = 1.6605390285703876e-27
 m1, m2, m3 = m1 * amu_to_kg, m2 * amu_to_kg, m3 * amu_to_kg
 
 q1 = 1 * 1.602e-19 #fragment charges 
@@ -28,11 +28,9 @@ k = 8.9875517923e9 #Coulomb force constant
 V = 2000 #spectrometer voltage
 L = 0.22 #spectrometer length in meters
 
-vibmax = 0.05*1.16e-10 #max vibration amplitude for each fragment
-
-r10 = np.array([5e-10, 0, 0])  #fragment intial position vectors (x, y, z)
-r20 = np.array([-5e-10, 0, 0]) 
-r30 = np.array([0, 5e-10, 0]) 
+r10 = np.array([0, 0, 0])  #fragment intial position vectors (x, y, z)
+r20 = np.array([-1.16e-10, 0, 0]) 
+r30 = np.array([1.16e-10, 0, 0]) 
 
 v10 = np.array([0, 0, 0]) # fragment initial velocity vectors (vx, vy, vz)
 v20 = np.array([0, 0, 0])
@@ -171,15 +169,15 @@ def save_frags(file):
         index = np.zeros(num)
         xyt_all = np.zeros((num, 13))
         xyt_all[:,0] = delay
-        xyt_all[:,1] = x1
-        xyt_all[:,2] = y1
-        xyt_all[:,3] = tof1
-        xyt_all[:,4] = x2
-        xyt_all[:,5] = y2
-        xyt_all[:,6] = tof2
-        xyt_all[:,7] = x3
-        xyt_all[:,8] = y3
-        xyt_all[:,9] = tof3
+        xyt_all[:,1] = x1*1000
+        xyt_all[:,2] = y1*1000
+        xyt_all[:,3] = tof1*1e9
+        xyt_all[:,4] = x2*1000
+        xyt_all[:,5] = y2*1000
+        xyt_all[:,6] = tof2*1e9
+        xyt_all[:,7] = x3*1000
+        xyt_all[:,8] = y3*1000
+        xyt_all[:,9] = tof3*1e9
         xyt_all[:,10] = adc1
         xyt_all[:,11] = adc2
         xyt_all[:,12] = index
