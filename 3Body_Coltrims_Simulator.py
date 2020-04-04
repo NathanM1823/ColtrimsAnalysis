@@ -28,6 +28,8 @@ k = 8.9875517923e9 #Coulomb force constant
 V = 2000 #spectrometer voltage
 L = 0.22 #spectrometer length in meters
 
+vibmax = 0.05*1.16e-10 #max vibration amplitude for each fragment
+
 r10 = np.array([5e-10, 0, 0])  #fragment intial position vectors (x, y, z)
 r20 = np.array([-5e-10, 0, 0]) 
 r30 = np.array([0, 5e-10, 0]) 
@@ -131,12 +133,16 @@ def simulate(r10, r20, r30):
         axis = rand_vector()
         theta = 2 * np.pi * np.random.rand()
         
-        r10 = np.dot(rotation_matrix(axis, theta), r10)
-        r20 = np.dot(rotation_matrix(axis, theta), r20)
-        r30 = np.dot(rotation_matrix(axis, theta), r30)
-        x10, y10, z10 = r10 #unpack fragment initial position vectors
-        x20, y20, z20 = r20
-        x30, y30, z30 = r30
+        r10_vib = r10 + rand_vector() * vibmax
+        r20_vib = r20 + rand_vector() * vibmax
+        r30_vib = r30 + rand_vector() * vibmax
+        
+        r10_vib = np.dot(rotation_matrix(axis, theta), r10_vib)
+        r20_vib = np.dot(rotation_matrix(axis, theta), r20_vib)
+        r30_vib = np.dot(rotation_matrix(axis, theta), r30_vib)
+        x10, y10, z10 = r10_vib #unpack fragment initial position vectors
+        x20, y20, z20 = r20_vib
+        x30, y30, z30 = r30_vib
         
         #define initial values
         ivs = [x10, y10, z10, x20, y20, z20, x30, y30, z30, 
