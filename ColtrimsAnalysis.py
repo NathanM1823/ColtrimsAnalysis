@@ -339,7 +339,8 @@ def load_3body(filename, num_files):
     return[tof1, x1, y1, tof2, x2, y2, tof3, x3, y3, delay, adc1, adc2, index]
 
 def load_frag_2body(directory, filename):
-    xyt_all = np.load(directory + '/Fragments/' + filename)
+    xyt_all = np.load(directory + '/Fragments/' + filename + 
+                      '/' + filename + '.npy')
     delay = xyt_all[:,0]
     x1 = xyt_all[:,1] 
     y1 = xyt_all[:,2] 
@@ -353,7 +354,9 @@ def load_frag_2body(directory, filename):
     return(tof1, x1, y1, tof2, x2, y2, delay, adc1, adc2, index)
 
 def load_frag_3body(directory, filename):
-    xyt_all = np.load(directory + '/Fragments/' + filename)
+    xyt_all = np.load(directory + '/Fragments/' + filename + 
+                      '/' + filename + '.npy')
+    delay = xyt_all[:,0]
     delay = xyt_all[:,0]
     x1 = xyt_all[:,1] 
     y1 = xyt_all[:,2] 
@@ -370,6 +373,24 @@ def load_frag_3body(directory, filename):
     return(tof1, x1, y1, tof2, x2, y2, tof3, x3, y3,
            delay, adc1, adc2, index)
 
+def load_sim_3body(file):
+    xyt_all = np.load(file)
+    delay = xyt_all[:,0]
+    delay = xyt_all[:,0]
+    x1 = xyt_all[:,1] 
+    y1 = xyt_all[:,2] 
+    tof1 = xyt_all[:,3]
+    x2 = xyt_all[:,4] 
+    y2 = xyt_all[:,5] 
+    tof2 = xyt_all[:,6] 
+    x3 = xyt_all[:,7] 
+    y3 = xyt_all[:,8] 
+    tof3 = xyt_all[:,9]
+    adc1 = xyt_all[:,10] 
+    adc2 = xyt_all[:,11] 
+    index = xyt_all[:,12] 
+    return(tof1, x1, y1, tof2, x2, y2, tof3, x3, y3,
+           delay, adc1, adc2, index)
     
 def tof_cal(fragments, charges, tofs, err=False):
     '''Performs TOF calibration, returns values of C and t0.'''
@@ -755,11 +776,10 @@ class allhits_analysis:
     
     def __init__(self, xyt_list, molec_name):
         self.xyt_list = xyt_list
-        self.tof = xyt_list[0]
         self.molec_name = molec_name
         
     def gate_tof(self, gate_range, plot=True):
-        tof = self.tof
+        tof = self.xyt_list[0]
         tofmin, tofmax = gate_range
         condition = ((tof > tofmin) & (tof < tofmax))
         gate = np.where(condition)
@@ -767,17 +787,26 @@ class allhits_analysis:
         self.tof = self.xyt_list[0]
         if plot == True:
             self.tof_hist1d()
+    
+    def gate_xy(self, xrange, yrange):
+        x = self.xyt_list[1]
+        y = self.xyt_list[2]
+        xmin, xmax = xrange
+        ymin, ymax = yrange
+        condition = ((x > xmin) & (x < xmax) & (y > ymin) & (y < ymax))
+        gate = np.where(condition)
+        self.xyt_list = apply_xytgate(self.xyt_list, gate)
         
     def gate_xytof(self, tofrange, xrange, yrange, binsize='default', 
                    return_hist=False, plot_yield=True, ion_form='', 
                    norm=False, gate_all=False):
-        tof = self.tof
+        tof = self.xyt_list[0]
         x = self.xyt_list[1]
         y = self.xyt_list[2]
         tmin, tmax = tofrange
         xmin, xmax = xrange
         ymin, ymax = yrange
-        condition = ((tof > tmin) & (tof < tmax) &(x > xmin) & 
+        condition = ((tof > tmin) & (tof < tmax) & (x > xmin) & 
                      (x < xmax) & (y > ymin) & (y < ymax))
         gate = np.where(condition)
         delay = self.xyt_list[3][gate]
@@ -799,7 +828,7 @@ class allhits_analysis:
             return(h, edge)
         
     def tof_hist1d(self, binsize='default', log_scale=True):
-        tof = self.tof
+        tof = self.xyt_list[0]
         plt.style.use('default')
         fig, ax = plt.subplots(1, 1)
         fig.canvas.set_window_title('1D TOF')
@@ -817,7 +846,7 @@ class allhits_analysis:
                ybinsize=binsize)
         
     def tof_x_hist2d(self, tofbin='default', xbin='default'):
-        tof = self.tof
+        tof = self.xyt_list[0]
         x = self.xyt_list[1]
         plt.style.use('dark_background')
         fig, ax = plt.subplots(1, 1)
@@ -826,7 +855,7 @@ class allhits_analysis:
                'TOF (ns)', 'X Position (mm)', xbinsize=tofbin, ybinsize=xbin)
         
     def tof_y_hist2d(self, tofbin='default', ybin='default'):
-        tof = self.tof
+        tof = self.xyt_list[0]
         y = self.xyt_list[2]
         plt.style.use('dark_background')
         fig, ax = plt.subplots(1, 1)
@@ -835,7 +864,7 @@ class allhits_analysis:
                'TOF (ns)', 'Y Position (mm)', xbinsize=tofbin, ybinsize=ybin)
         
     def tof_delay_hist2d(self, delbin='default', tofbin='default'):
-        tof = self.tof
+        tof = self.xyt_list[0]
         delay = self.xyt_list[3]
         plt.style.use('dark_background')
         fig, ax = plt.subplots(1, 1)
@@ -1065,8 +1094,10 @@ class p_ke_2body:
                'Kinetic Energy (eV)', '', binsize=binsize)
         
     def save_frags(self, directory, file):
-        if not os.path.exists(file+'/Fragments'):
-            os.makedirs(file+'/Fragments')
+        if not os.path.exists(directory + '/Fragments'):
+            os.makedirs(directory + '/Fragments')
+        if not os.path.exists(directory + '/Fragments/' + file):
+            os.makedirs(directory + '/Fragments/' + file)
         tof1, x1, y1, tof2, x2, y2, delay, adc1, adc2, index = self.xyt_list
         xyt_all = np.zeros((tof1.size, 10))
         xyt_all[:,0] = delay
@@ -1079,7 +1110,7 @@ class p_ke_2body:
         xyt_all[:,7] = adc1
         xyt_all[:,8] = adc2
         xyt_all[:,9] = index
-        np.save(directory + '/Fragments/' + file, xyt_all)
+        np.save(directory + '/Fragments/' + file + '/' + file, xyt_all)
         
 class p_ke_3body:
     '''
@@ -1335,8 +1366,10 @@ class p_ke_3body:
         ax.legend([self.ion1, self.ion2, self.ion3, 'Total KER'])
         
     def save_frags(self, directory, file):
-        if not os.path.exists(file+'/Fragments'):
-            os.makedirs(file+'/Fragments')
+        if not os.path.exists(directory + '/Fragments'):
+            os.makedirs(directory + '/Fragments')
+        if not os.path.exists(directory + '/Fragments/' + file):
+            os.makedirs(directory + '/Fragments/' + file)
         tof1, x1, y1, tof2, x2, y2, tof3, x3, y3, delay, adc1, adc2, index = self.xyt_list
         xyt_all = np.zeros((tof1.size, 10))
         xyt_all[:,0] = delay
@@ -1352,5 +1385,5 @@ class p_ke_3body:
         xyt_all[:,10] = adc1
         xyt_all[:,11] = adc2
         xyt_all[:,12] = index
-        np.save(directory + '/Fragments/' + file, xyt_all)
+        np.save(directory + '/Fragments/' + file + '/' + file, xyt_all)
         
