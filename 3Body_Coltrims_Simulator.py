@@ -9,7 +9,6 @@ import numpy as np
 from random import gauss
 from scipy.integrate import solve_ivp
 from numba import jit
-import os
 
 file = 'S:/JRM_ARgroup/Nathan/Coltrims Sim/CO2' #file to export data to
 
@@ -18,12 +17,12 @@ num = 10000 #number of molecules to simulate
 m1 = 12.011 #fragment masses
 m2 = 15.999 
 m3 = 15.999
-amu_to_kg = 1.6605390285703876e-27
+amu_to_kg = 1.66053903e-27
 m1, m2, m3 = m1 * amu_to_kg, m2 * amu_to_kg, m3 * amu_to_kg
 
-q1 = 1 * 1.602e-19 #fragment charges 
-q2 = 1 * 1.602e-19
-q3 = 1 * 1.602e-19
+q1 = 1 * 1.60217662e-19 #fragment charges 
+q2 = 1 * 1.60217662e-19
+q3 = 1 * 1.60217662e-19
 k = 8.9875517923e9 #Coulomb force constant
 V = 2000 #spectrometer voltage
 L = 0.22 #spectrometer length in meters
@@ -42,12 +41,10 @@ vx10, vy10, vz10 = v10 #unpack fragment intial velocity vectors
 vx20, vy20, vz20 = v20
 vx30, vy30, vz30 = v30
 
-num_frames = 10 #number of frames to get from solve_ivp
 t0 = 0           #start time
-tmax = 1e-5     #stop time
-t_out = np.linspace(t0, tmax, num_frames) #time values to evaluate solve_ivp
+tmax = 5e-6     #stop time
 
-tof1 = np.zeros(num)
+tof1 = np.zeros(num) #arrays to store output data
 x1 = np.zeros(num)
 y1 = np.zeros(num)
 tof2 = np.zeros(num)
@@ -80,7 +77,7 @@ def rotation_matrix(axis, theta):
                      [2 * (bd + ac), 2 * (cd - ab), aa + dd - bb - cc]])
 
 @jit
-def accel(r1, q1, m1, r2, q2):
+def coul(r1, q1, m1, r2, q2):
     '''Accleration from force on charge q1 at r1 by charge q2 at r2.'''
     return k * q1 *q2 * (r1-r2) / np.linalg.norm(r1-r2)**3 / m1
 
@@ -114,10 +111,10 @@ def diffeq(t, d):
     vy3 = d[16]
     vz3 = d[17]
     
-    #calulate accelerations of each fragment
-    dvx1, dvy1, dvz1 = accel(r1, q1, m1, r2, q2) + accel(r1, q1, m1, r3, q3) + spec(q1, m1) 
-    dvx2, dvy2, dvz2 = accel(r2, q2, m2, r1, q1) + accel(r2, q2, m2, r3, q3) + spec(q2, m2)
-    dvx3, dvy3, dvz3 = accel(r3, q3, m3, r1, q1) + accel(r3, q3, m3, r2, q2) + spec(q3, m3)
+    #calculate accelerations of each fragment
+    dvx1, dvy1, dvz1 = coul(r1, q1, m1, r2, q2) + coul(r1, q1, m1, r3, q3) + spec(q1, m1) 
+    dvx2, dvy2, dvz2 = coul(r2, q2, m2, r1, q1) + coul(r2, q2, m2, r3, q3) + spec(q2, m2)
+    dvx3, dvy3, dvz3 = coul(r3, q3, m3, r1, q1) + coul(r3, q3, m3, r2, q2) + spec(q3, m3)
     
     return(vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, 
            dvx1, dvy1, dvz1, dvx2, dvy2, dvz2, dvx3, dvy3, dvz3)
@@ -133,9 +130,9 @@ def simulate(r10, r20, r30):
         axis = rand_vector()
         theta = 2 * np.pi * np.random.rand()
         
-        r10_vib = r10 + rand_vector() * vibmax
-        r20_vib = r20 + rand_vector() * vibmax
-        r30_vib = r30 + rand_vector() * vibmax
+        r10_vib = r10 + rand_vector() * vibmax * np.random.rand()
+        r20_vib = r20 + rand_vector() * vibmax * np.random.rand()
+        r30_vib = r30 + rand_vector() * vibmax * np.random.rand()
         
         r10_vib = np.dot(rotation_matrix(axis, theta), r10_vib)
         r20_vib = np.dot(rotation_matrix(axis, theta), r20_vib)
@@ -149,8 +146,7 @@ def simulate(r10, r20, r30):
                vx10, vy10, vz10, vx20, vy20, vz20, vx30, vy30, vz30]
         
         #run differential equation solver with initial values
-        sol = solve_ivp(diffeq, [t0, tmax], ivs, t_eval=t_out, 
-                         events=(hit1, hit2, hit3))
+        sol = solve_ivp(diffeq, [t0, tmax], ivs, events=(hit1, hit2, hit3))
        
         #check for true detector hits and extract tof, x, and y
         if sol.t_events[0].size !=0 and sol.t_events[1].size !=0 and sol.t_events[2].size != 0:
