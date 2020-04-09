@@ -8,6 +8,7 @@ This module contains Python functions and classes useful for COLTRIMS data
 analysis.
 """
 from matplotlib import pyplot as plt
+from matplotlib import patches as mpatches
 from matplotlib import colors
 from fast_histogram import histogram2d, histogram1d
 import numpy as np
@@ -1296,6 +1297,11 @@ class p_ke_3body:
         ylabel = r'$\epsilon_3 - \frac{1}{3}$'
         hist2d(x_data, y_data, ax, 'Dalitz Plot', xlabel, ylabel, 
                xbinsize=xbin, ybinsize=ybin, color_map='viridis')
+        ax.set_xlim(-0.6, 0.6)
+        ax.set_ylim(-0.4, 0.6)
+        ax.set_aspect('equal')
+        circle = mpatches.Circle((0,0), 1/3, fill=False, linestyle='--')
+        ax.add_patch(circle)
         ax.xaxis.label.set_size(12)
         ax.yaxis.label.set_size(12)
         plt.tight_layout()
