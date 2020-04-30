@@ -358,7 +358,6 @@ def load_frag_3body(directory, filename):
     xyt_all = np.load(directory + '/Fragments/' + filename + 
                       '/' + filename + '.npy')
     delay = xyt_all[:,0]
-    delay = xyt_all[:,0]
     x1 = xyt_all[:,1] 
     y1 = xyt_all[:,2] 
     tof1 = xyt_all[:,3]
@@ -377,7 +376,6 @@ def load_frag_3body(directory, filename):
 def load_sim_3body(file):
     xyt_all = np.load(file)
     delay = xyt_all[:,0]
-    delay = xyt_all[:,0]
     x1 = xyt_all[:,1] 
     y1 = xyt_all[:,2] 
     tof1 = xyt_all[:,3]
@@ -391,6 +389,27 @@ def load_sim_3body(file):
     adc2 = xyt_all[:,11] 
     index = xyt_all[:,12] 
     return(tof1, x1, y1, tof2, x2, y2, tof3, x3, y3,
+           delay, adc1, adc2, index)
+
+def load_sim_4body(file):
+    xyt_all = np.load(file)
+    delay = xyt_all[:,0]
+    x1 = xyt_all[:,1] 
+    y1 = xyt_all[:,2] 
+    tof1 = xyt_all[:,3]
+    x2 = xyt_all[:,4] 
+    y2 = xyt_all[:,5] 
+    tof2 = xyt_all[:,6] 
+    x3 = xyt_all[:,7] 
+    y3 = xyt_all[:,8] 
+    tof3 = xyt_all[:,9]
+    x4 = xyt_all[:,10] 
+    y4 = xyt_all[:,11] 
+    tof4 = xyt_all[:,12]
+    adc1 = xyt_all[:,13] 
+    adc2 = xyt_all[:,14] 
+    index = xyt_all[:,15] 
+    return(tof1, x1, y1, tof2, x2, y2, tof3, x3, y3, tof4, x4, y4,
            delay, adc1, adc2, index)
     
 def tof_cal(fragments, charges, tofs, err=False):
