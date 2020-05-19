@@ -518,6 +518,55 @@ def view_gate2body(xyt_list, masses, charges, p_range, offset, param_list,
     ax.plot(t1, poly(t1, coef) - offset, 'r')
     ax.legend(['Polynomial Fit', 'Upper Gate Bound', 'Lower Gate Bound'])  
     
+def view_gated2body(xyt_list, masses, charges, p_range, offset, param_list, 
+               binsize='default'):
+    '''
+    Views 2 body coincidence channel after gating, but does not apply the gate
+    to the total xyt array.
+    '''
+    da_to_au = 1822.8885 #conversion factor from daltons to atomic units
+    mm_ns_to_au = 0.457102 #conversion factor from mm/ns to atomic units
+    tof1, x1, y1, tof2, x2, y2, delay, adc1, adc2, index = xyt_list
+    l, z0, vz0, x_jet, vx_jet, y_jet, vy_jet, C, t0 = param_list
+    m1, m2 = [da_to_au*i for i in masses]
+    q1, q2 = charges
+    pmin, pmax = p_range
+    acc1 = (2 * q1 * (l - z0)) / (m1 * C**2) #acceleration of 1st ion
+    acc2 = (2 * q2 * (l - z0)) / (m2 * C**2) #acceleration of 2nd ion
+    p1 = np.linspace(pmin, pmax, 200)
+    p2 = -p1
+    v1 = p1/m1/mm_ns_to_au
+    v2 = p2/m2/mm_ns_to_au
+    t1 = (-(v1-vz0) + np.sqrt((v1-vz0)**2 + 2*acc1*(l - z0)))/acc1 + t0 #TOF 1st ion
+    t2 = (-(v2-vz0) + np.sqrt((v2-vz0)**2 + 2*acc2*(l - z0)))/acc2 + t0 #TOF 2nd ion
+    coef = np.polyfit(t1, t2, deg=4)
+    condition1 = ((tof1 > t1[-1]) & (tof1 < t1[0])
+    & (tof2 > t2[0]) & (tof2 < t2[-1])) #Preliminary gate
+    gate1 = np.where(condition1) 
+    tof1, tof2 = xyt_list[0][gate1], xyt_list[3][gate1]
+    
+    plt.style.use('dark_background')
+    fig, ax = plt.subplots(1, 1)
+    fig.canvas.set_window_title('PIPICO Pre-Gate')
+    hist2d(tof1, tof2, ax, 'PIPICO Pre-Gate', 'TOF 1 (ns)', 'TOF 2 (ns)', 
+           xbinsize=binsize, ybinsize=binsize)
+    ax.plot(t1, poly(t1, coef), 'b')
+    ax.plot(t1, poly(t1, coef) + offset, 'w')
+    ax.plot(t1, poly(t1, coef) - offset, 'r')        
+                 
+    polytof2 = poly(tof1, coef)
+    polyupper = polytof2 + offset
+    polylower = polytof2 - offset
+    ax.legend(['Polynomial Fit', 'Upper Gate Bound', 'Lower Gate Bound'])
+    condition2 = ((tof2 >= polylower) & (tof2 <= polyupper)) #Second gate
+    gate2 = np.where(condition2)
+    tof1, tof2 = tof1[gate2], tof2[gate2]
+    fig, ax = plt.subplots(1, 1)
+    fig.canvas.set_window_title('PIPICO Post-Gate')
+    hist2d(tof1, tof2, ax, 'PIPICO Post-Gate', 'TOF 1 (ns)', 'TOF 2 (ns)', 
+           xbinsize=binsize, ybinsize=binsize)
+    print(len(gate2[0]), 'Ions Gated')   
+    
 def gate_2body(xyt_list, masses, charges, p_range, offset, param_list, 
                binsize='default'):
     '''
@@ -799,8 +848,8 @@ class allhits_analysis:
         self.xyt_list = apply_xytgate(self.xyt_list, gate)
         
     def gate_xytof(self, tofrange, xrange, yrange, binsize='default', 
-                   return_hist=False, plot_yield=True, ion_form='', 
-                   norm=False, gate_all=False):
+                   return_hist=False, plot_yield=False, ion_form='', 
+                   norm=False, gate_all=False, plot_gate=True):
         tof = self.xyt_list[0]
         x = self.xyt_list[1]
         y = self.xyt_list[2]
@@ -810,7 +859,21 @@ class allhits_analysis:
         condition = ((tof > tmin) & (tof < tmax) & (x > xmin) & 
                      (x < xmax) & (y > ymin) & (y < ymax))
         gate = np.where(condition)
+        tof = tof[gate]
+        x = x[gate]
+        y = y[gate]
         delay = self.xyt_list[3][gate]
+        
+        if plot_gate == True:
+            plt.style.use('dark_background')
+            fig, (ax1, ax2) = plt.subplots(1, 2)
+            fig.canvas.set_window_title('Ion Gate X/Y/TOF')
+            hist2d(tof, x, ax1, 'TOF vs. X {}'.format(ion_form), 'TOF (ns)', 
+                   'X (mm)', colorbar=False)
+            hist2d(tof, y, ax2, 'TOF vs. Y {}'.format(ion_form), 'TOF (ns)', 
+                   'Y (mm)')
+            print(gate[0].size,'Ions Gated {}'.format(ion_form))
+            
         if plot_yield == True:
             plt.style.use('default')
             fig, ax = plt.subplots(1, 1)
