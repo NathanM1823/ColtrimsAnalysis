@@ -1,2 +1,2 @@
 # ColtrimsAnalysis
-Contains Python scripts useful in COLTRIMS experiment data analysis
+Contains Python programs useful in COLTRIMS experiment data analysis
