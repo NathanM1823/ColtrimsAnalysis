@@ -10,7 +10,7 @@ from random import gauss
 from scipy.integrate import solve_ivp
 from numba import jit
 
-file = 'C:/Users/Nathan/Desktop/CHD_sim' #file to export data to
+file = 'C:/Users/Nathan/Desktop/CHD_sim2' #file to export data to
 
 num = 10000 #number of molecules to simulate
 
@@ -29,7 +29,10 @@ k = 8.9875517923e9 #Coulomb force constant
 V = 2000 #spectrometer voltage
 L = 0.22 #spectrometer length in meters
 
-vibmax = 0 #maximum vibration amplitude for each fragment
+vibmax1 = 1.54e-10 *0.08 #maximum vibration amplitude for each fragment
+vibmax2 = 1.54e-10 *0.08
+vibmax3 = 1.54e-10 *0.08
+vibmax4 = 1.54e-10 *0.08
 
 #fragment intial position vectors (x, y, z)
 r10 = np.array([1.6387845757, 0.3062579488, -0.3362671360])*1e-10
@@ -150,10 +153,10 @@ def simulate(r10, r20, r30, r40):
     for i in range(num):
         
         #add a random vibration to initial position vectors 
-        r10_vib = r10 + rand_vector() * vibmax * np.random.rand()
-        r20_vib = r20 + rand_vector() * vibmax * np.random.rand()
-        r30_vib = r30 + rand_vector() * vibmax * np.random.rand()
-        r40_vib = r40 + rand_vector() * vibmax * np.random.rand()
+        r10_vib = r10 + rand_vector() * vibmax1 * np.random.rand()
+        r20_vib = r20 + rand_vector() * vibmax2 * np.random.rand()
+        r30_vib = r30 + rand_vector() * vibmax3 * np.random.rand()
+        r40_vib = r40 + rand_vector() * vibmax4 * np.random.rand()
         
         axis = rand_vector() #choose random axis
         theta = 2 * np.pi * np.random.rand() #choose random angle
@@ -177,19 +180,19 @@ def simulate(r10, r20, r30, r40):
         sol = solve_ivp(diffeq, [t0, tmax], ivs, events=(hit1, hit2, hit3, hit4))
        
         #check for true detector hits and extract tof, x, and y
-        if sol.t_events[0].size !=0 and sol.t_events[1].size !=0 and sol.t_events[2].size != 0 and sol.t_events[3] != 0:
-            tof1[i] = sol.t_events[0][0]
-            tof2[i] = sol.t_events[1][0]
-            tof3[i] = sol.t_events[2][0]
-            tof4[i] = sol.t_events[3][0]
-            x1[i] = sol.y_events[0][0][0]
-            y1[i] = sol.y_events[0][0][1]
-            x2[i] = sol.y_events[1][0][3]
-            y2[i] = sol.y_events[1][0][4]
-            x3[i] = sol.y_events[2][0][6]
-            y3[i] = sol.y_events[2][0][7]
-            x4[i] = sol.y_events[3][0][9]
-            y4[i] = sol.y_events[3][0][10]
+        #if sol.t_events[0].size !=0 and sol.t_events[1].size !=0 and sol.t_events[2].size != 0 and sol.t_events[3] != 0:
+        tof1[i] = sol.t_events[0][0]
+        tof2[i] = sol.t_events[1][0]
+        tof3[i] = sol.t_events[2][0]
+        tof4[i] = sol.t_events[3][0]
+        x1[i] = sol.y_events[0][0][0]
+        y1[i] = sol.y_events[0][0][1]
+        x2[i] = sol.y_events[1][0][3]
+        y2[i] = sol.y_events[1][0][4]
+        x3[i] = sol.y_events[2][0][6]
+        y3[i] = sol.y_events[2][0][7]
+        x4[i] = sol.y_events[3][0][9]
+        y4[i] = sol.y_events[3][0][10]
           
 def save_data(file):
     '''Save X, Y, and TOF data to a binary file.'''
