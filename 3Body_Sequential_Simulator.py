@@ -10,15 +10,15 @@ from random import gauss
 from scipy.integrate import solve_ivp
 from numba import jit
 
-file = 'S:/JRM_ARgroup/Nathan/Coltrims Sim/CO2_sequential' #file to export data to
+file = 'C:/Users/Nathan/Documents/Python Programs/Rolles Research/CO2_sequential' #file to export data to
 
-num = 1000 #number of molecules to simulate
+num = 5000 #number of molecules to simulate
 
-m11 = 15.999 #fragment masses before sequential fragmentation
-m21 = 28.010
+m11 = 28.010 #fragment masses before sequential fragmentation
+m21 = 15.999
 
-m12 = 15.999 #fragment masses after sequential fragmentation
-m22 = 12.011 
+m12 = 12.011 #fragment masses after sequential fragmentation
+m22 = 15.999 
 m32 = 15.999
 
 gmol_to_kg = 1.66053903e-27 #convert mass from g/mole to kg
@@ -39,17 +39,11 @@ L = 0.22 #spectrometer length in meters
 
 vibmax = 1.16e-10 * 0 #maximum vibration amplitude for each fragment
 
-r11 = np.array([-1.16e-10, 0, 0])  #2 body intial position vectors (x, y, z)
-r21 = np.array([0.683e-10, 0, 0]) 
+r11 = np.array([-0.683e-10, 0, 0])  #2 body intial position vectors (x, y, z)
+r21 = np.array([1.16e-10, 0, 0]) 
   
-r22 = np.array([0, 0, 0]) #fragment intial position vectors (x, y, z)
-r32 = np.array([1.16e-10, 0, 0]) 
-
-v11 = np.array([0, 0, 0]) # fragment initial velocity vectors (vx, vy, vz)
-v21 = np.array([0, 0, 0])
-
-vx11, vy11, vz11 = v11 #unpack fragment intial velocity vectors
-vx21, vy21, vz21 = v21
+r12 = np.array([0, 0, 0]) #fragment intial position vectors (x, y, z)
+r22 = np.array([-1.16e-10, 0, 0]) 
 
 tof1 = np.zeros(num) #create arrays to store output data
 x1 = np.zeros(num)
@@ -157,7 +151,7 @@ def hit2(t, d): return L-d[5]
 
 def hit3(t, d): return L-d[8]
 
-def simulate(r11, r21, r22, r32):
+def simulate(r11, r21, r12, r22):
     '''Runs the simulation for a given number of molecules.'''
     for i in range(num):
         
@@ -179,7 +173,7 @@ def simulate(r11, r21, r22, r32):
         ivs = [x11, y11, z11, x21, y21, z21, 0, 0, 0, 0, 0, 0]
         
         t0 = 0 #integration start time
-        tmax = np.random.normal(loc=20e-9, scale=15e-9) #integration stop time
+        tmax = 30e-9 #integration stop time
         
         #run differential equation solver with initial values
         sol = solve_ivp(diffeq1, [t0, tmax], ivs)
@@ -192,12 +186,12 @@ def simulate(r11, r21, r22, r32):
         axis = rand_vector() #choose random axis
         theta = 2 * np.pi * np.random.rand() #choose random angle
         
+        r12 = np.dot(rotation_matrix(axis, theta), r12)
         r22 = np.dot(rotation_matrix(axis, theta), r22)
-        r32 = np.dot(rotation_matrix(axis, theta), r32)
         
-        r12 = r11
-        r22 = r22 + r21
-        r32 = r32 + r21
+        r12 = r11 + r12
+        r22 = r11 + r22
+        r32 = r21
         
         x12, y12, z12 = r12 #unpack fragment initial position vectors
         x22, y22, z22 = r22
@@ -208,10 +202,10 @@ def simulate(r11, r21, r22, r32):
         
         #define initial conditions list for the diffeq solver
         ivs = [x12, y12, z12, x22, y22, z22, x32, y32, z32, 
-               vx11, vy11, vz11, vx21, vy21, vz21, vx21, vy21, vz21]
+               vx11, vy11, vz11, vx11, vy11, vz11, vx21, vy21, vz21]
         
         t0 = tmax #integration start time
-        tmax = 3.5e-6 #integration stop time
+        tmax = 5e-6 #integration stop time
         
         #run differential equation solver with initial values
         sol = solve_ivp(diffeq2, [t0, tmax], ivs, events=(hit1, hit2, hit3))
@@ -249,5 +243,5 @@ def save_data(file):
     xyt_all[:,12] = index
     np.save(file, xyt_all) #save array as a binary file
         
-sol = simulate(r11, r21, r22, r32) #run simulator with given initial positions
+sol = simulate(r11, r21, r12, r22) #run simulator with given initial positions
 save_data(file)        #save the data
