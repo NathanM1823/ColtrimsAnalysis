@@ -1366,7 +1366,7 @@ class p_ke_3body:
         newtoncalc(plot2, xbin, ybin)
         newtoncalc(plot3, xbin, ybin)
     
-    def dalitz(self, xbin, ybin):
+    def dalitz1(self, xbin, ybin):
         epsilon1 = self.ke_tot1 / self.ker
         epsilon2 = self.ke_tot2 / self.ker
         epsilon3 = self.ke_tot3 / self.ker
@@ -1374,7 +1374,7 @@ class p_ke_3body:
         y_data = epsilon3 - 1/3
         plt.style.use('default')
         fig, ax = plt.subplots(1, 1)
-        fig.canvas.set_window_title('Dalitz Plot')
+        fig.canvas.set_window_title('Dalitz Plot 1')
         xlabel = r'$(\epsilon_2 - \epsilon_1)/\sqrt{3} $'
         ylabel = r'$\epsilon_3 - \frac{1}{3}$'
         hist2d(x_data, y_data, ax, 'Dalitz Plot', xlabel, ylabel, 
@@ -1388,6 +1388,50 @@ class p_ke_3body:
         ax.yaxis.label.set_size(12)
         plt.tight_layout()
     
+    def dalitz2(self, xbin, ybin):
+        epsilon1 = self.ke_tot1 / self.ker
+        epsilon2 = self.ke_tot2 / self.ker
+        epsilon3 = self.ke_tot3 / self.ker
+        x_data = (epsilon1 - epsilon3) / (3**(1/2))
+        y_data = epsilon2 - 1/3
+        plt.style.use('default')
+        fig, ax = plt.subplots(1, 1)
+        fig.canvas.set_window_title('Dalitz Plot 2')
+        xlabel = r'$(\epsilon_1 - \epsilon_3)/\sqrt{3} $'
+        ylabel = r'$\epsilon_2 - \frac{1}{3}$'
+        hist2d(x_data, y_data, ax, 'Dalitz Plot', xlabel, ylabel, 
+               xbinsize=xbin, ybinsize=ybin, color_map='viridis')
+        ax.set_xlim(-0.6, 0.6)
+        ax.set_ylim(-0.4, 0.6)
+        ax.set_aspect('equal')
+        circle = mpatches.Circle((0,0), 1/3, fill=False, linestyle='--')
+        ax.add_patch(circle)
+        ax.xaxis.label.set_size(12)
+        ax.yaxis.label.set_size(12)
+        plt.tight_layout()
+        
+    def dalitz3(self, xbin, ybin):
+        epsilon1 = self.ke_tot1 / self.ker
+        epsilon2 = self.ke_tot2 / self.ker
+        epsilon3 = self.ke_tot3 / self.ker
+        x_data = (epsilon2 - epsilon3) / (3**(1/2))
+        y_data = epsilon1 - 1/3
+        plt.style.use('default')
+        fig, ax = plt.subplots(1, 1)
+        fig.canvas.set_window_title('Dalitz Plot 3')
+        xlabel = r'$(\epsilon_2 - \epsilon_3)/\sqrt{3} $'
+        ylabel = r'$\epsilon_1 - \frac{1}{3}$'
+        hist2d(x_data, y_data, ax, 'Dalitz Plot', xlabel, ylabel, 
+               xbinsize=xbin, ybinsize=ybin, color_map='viridis')
+        ax.set_xlim(-0.6, 0.6)
+        ax.set_ylim(-0.4, 0.6)
+        ax.set_aspect('equal')
+        circle = mpatches.Circle((0,0), 1/3, fill=False, linestyle='--')
+        ax.add_patch(circle)
+        ax.xaxis.label.set_size(12)
+        ax.yaxis.label.set_size(12)
+        plt.tight_layout()
+        
     def plot_pxyz(self):
         plt.style.use('default')
         fig, [ax1, ax2, ax3] = plt.subplots(1, 3)
