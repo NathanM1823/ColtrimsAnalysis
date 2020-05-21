@@ -10,16 +10,16 @@ from random import gauss
 from scipy.integrate import solve_ivp
 from numba import jit
 
-file = 'C:/Users/Nathan/Documents/Python Programs/Rolles Research/CO2_sequential' #file to export data to
+file = 'C:/Users/Nathan/Documents/Python Programs/Rolles Research/OCS_CO' #file to export data to
 
-num = 5000 #number of molecules to simulate
+num = 1000 #number of molecules to simulate
 
 m11 = 28.010 #fragment masses before sequential fragmentation
-m21 = 15.999
+m21 = 32.06
 
 m12 = 12.011 #fragment masses after sequential fragmentation
 m22 = 15.999 
-m32 = 15.999
+m32 = 32.06
 
 gmol_to_kg = 1.66053903e-27 #convert mass from g/mole to kg
 m11, m21 = m11 * gmol_to_kg, m21 * gmol_to_kg
@@ -40,10 +40,10 @@ L = 0.22 #spectrometer length in meters
 vibmax = 1.16e-10 * 0 #maximum vibration amplitude for each fragment
 
 r11 = np.array([-0.683e-10, 0, 0])  #2 body intial position vectors (x, y, z)
-r21 = np.array([1.16e-10, 0, 0]) 
+r21 = np.array([1.41e-10, 0, 0]) 
   
 r12 = np.array([0, 0, 0]) #fragment intial position vectors (x, y, z)
-r22 = np.array([-1.16e-10, 0, 0]) 
+r22 = np.array([-1.19e-10, 0, 0]) 
 
 tof1 = np.zeros(num) #create arrays to store output data
 x1 = np.zeros(num)
@@ -173,29 +173,29 @@ def simulate(r11, r21, r12, r22):
         ivs = [x11, y11, z11, x21, y21, z21, 0, 0, 0, 0, 0, 0]
         
         t0 = 0 #integration start time
-        tmax = 30e-9 #integration stop time
+        tmax = 10e-9 #integration stop time
         
         #run differential equation solver with initial values
         sol = solve_ivp(diffeq1, [t0, tmax], ivs)
         
-        r11 = np.array([sol.y[0][-1], sol.y[1][-1], sol.y[2][-1]])
-        r21 = np.array([sol.y[3][-1], sol.y[4][-1], sol.y[5][-1]])
+        r11_out = np.array([sol.y[0][-1], sol.y[1][-1], sol.y[2][-1]])
+        r21_out = np.array([sol.y[3][-1], sol.y[4][-1], sol.y[5][-1]])
         v11 = np.array([sol.y[6][-1], sol.y[7][-1], sol.y[8][-1]])
         v21 = np.array([sol.y[9][-1], sol.y[10][-1], sol.y[11][-1]])
         
         axis = rand_vector() #choose random axis
         theta = 2 * np.pi * np.random.rand() #choose random angle
         
-        r12 = np.dot(rotation_matrix(axis, theta), r12)
-        r22 = np.dot(rotation_matrix(axis, theta), r22)
+        r12_rot = np.dot(rotation_matrix(axis, theta), r12)
+        r22_rot = np.dot(rotation_matrix(axis, theta), r22)
         
-        r12 = r11 + r12
-        r22 = r11 + r22
-        r32 = r21
-        
-        x12, y12, z12 = r12 #unpack fragment initial position vectors
-        x22, y22, z22 = r22
-        x32, y32, z32 = r32
+        r12_mod = r11_out + r12_rot
+        r22_mod = r11_out + r22_rot
+        r32_mod = r21_out
+    
+        x12, y12, z12 = r12_mod #unpack fragment initial position vectors
+        x22, y22, z22 = r22_mod
+        x32, y32, z32 = r32_mod
         
         vx11, vy11, vz11 = v11
         vx21, vy21, vz21 = v21
