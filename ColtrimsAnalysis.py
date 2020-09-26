@@ -484,6 +484,26 @@ def intensity_calc(pz, wavelength):
     Up = pz**2 / 4 
     I = Up * 4 * omega**2 * 3.50e16 #3.50e16 is a conv. factor to W/cm^2
     return I #I is our desired intensity
+
+def c_calc(V, L):
+    '''
+    Calculates the value of the C parameter in the time-of-flight equation
+    TOF = C*sqrt(m/q) + t0 for a given voltage and spectrometer length. The
+    value of C is given in nanoseconds and atomics units for mass and charge.
+
+    Parameters
+    ----------
+    V : int, float
+        Spectrometer voltage in volts.
+    L : int, float
+        Spectrometer length in meters.
+
+    Returns
+    -------
+    C : float
+        The value of C.
+    '''
+    return L*(2/V)**(1/2)*(1e9)*(9.1093837015e-31/1.602176634e-19)**(1/2)
         
 def apply_xytgate(xyt_list, gate):
     '''Used to apply a gate to all XYT variables'''
@@ -1431,6 +1451,18 @@ class p_ke_3body:
         ax.xaxis.label.set_size(12)
         ax.yaxis.label.set_size(12)
         plt.tight_layout()
+    
+    def mom_sphere(self, xbin, ybin):
+        plt.style.use('dark_background')
+        fig, [ax1, ax2, ax3] = plt.subplots(1, 3)
+        fig.suptitle('Momentum Spheres {}'.format(self.ion1))
+        fig.canvas.set_window_title('Momentum Spheres')
+        hist2d(self.px1, self.py1, ax1, '$P_x$ vs. $P_y$', '$P_x$', '$P_y$',
+               xbinsize=xbin, ybinsize=ybin, colorbar=False)
+        hist2d(self.py1, self.pz1, ax2, '$P_y$ vs. $P_z$', '$P_y$', '$P_z$',
+               xbinsize=xbin, ybinsize=ybin, colorbar=False)
+        hist2d(self.pz1, self.px1, ax3, '$P_z$ vs. $P_x$', '$P_z$', '$P_x$',
+               xbinsize=xbin, ybinsize=ybin, )
         
     def plot_pxyz(self):
         plt.style.use('default')
