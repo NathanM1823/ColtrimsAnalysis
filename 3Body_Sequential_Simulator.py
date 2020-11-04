@@ -10,16 +10,16 @@ from random import gauss
 from scipy.integrate import solve_ivp
 from numba import jit
 
-file = 'C:/Users/Nathan/Documents/Python Programs/Rolles Research/OCS_CO' #file to export data to
+file = 'C:/Users/Nathan/Documents/Python Programs/Rolles Research/OCS_CS' #file to export data to
 
-num = 1000 #number of molecules to simulate
+num = 5000 #number of molecules to simulate
 
-m11 = 28.010 #fragment masses before sequential fragmentation
-m21 = 32.06
+m11 = 44.071 #fragment masses before sequential fragmentation
+m21 = 15.999
 
 m12 = 12.011 #fragment masses after sequential fragmentation
-m22 = 15.999 
-m32 = 32.06
+m22 = 32.06 
+m32 = 15.999
 
 gmol_to_kg = 1.66053903e-27 #convert mass from g/mole to kg
 m11, m21 = m11 * gmol_to_kg, m21 * gmol_to_kg
@@ -39,11 +39,11 @@ L = 0.22 #spectrometer length in meters
 
 vibmax = 1.16e-10 * 0 #maximum vibration amplitude for each fragment
 
-r11 = np.array([-0.683e-10, 0, 0])  #2 body intial position vectors (x, y, z)
-r21 = np.array([1.41e-10, 0, 0]) 
+r11 = np.array([1.03e-10, 0, 0])  #2 body intial position vectors (x, y, z)
+r21 = np.array([-1.20e-10, 0, 0]) 
   
 r12 = np.array([0, 0, 0]) #fragment intial position vectors (x, y, z)
-r22 = np.array([-1.19e-10, 0, 0]) 
+r22 = np.array([1.41e-10, 0, 0]) 
 
 tof1 = np.zeros(num) #create arrays to store output data
 x1 = np.zeros(num)
@@ -173,7 +173,7 @@ def simulate(r11, r21, r12, r22):
         ivs = [x11, y11, z11, x21, y21, z21, 0, 0, 0, 0, 0, 0]
         
         t0 = 0 #integration start time
-        tmax = 10e-9 #integration stop time
+        tmax = np.random.normal(loc=20e-9,scale=10e-9) #integration stop time
         
         #run differential equation solver with initial values
         sol = solve_ivp(diffeq1, [t0, tmax], ivs)

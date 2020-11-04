@@ -10,13 +10,13 @@ from random import gauss
 from scipy.integrate import solve_ivp
 from numba import jit
 
-file = 'S:/JRM_ARgroup/Nathan/Coltrims Sim/CO2' #file to export data to
+file = 'C:\\Users\\Nathan\\Documents\\Python Programs\\Rolles Research\\CHBr_Br_Br_electropositive.npy' #file to export data to
 
-num = 1000 #number of molecules to simulate
+num = 10 #number of molecules to simulate
 
-m1 = 12.011 #fragment masses
-m2 = 15.999 
-m3 = 15.999
+m1 = 93.92412503223001 #fragment masses
+m2 = 80.9163
+m3 = 80.9163
 gmol_to_kg = 1.66053903e-27 #convert mass from g/mole to kg
 m1, m2, m3 = m1 * gmol_to_kg, m2 * gmol_to_kg, m3 * gmol_to_kg
 
@@ -27,11 +27,12 @@ k = 8.9875517923e9 #Coulomb force constant
 V = 2000 #spectrometer voltage
 L = 0.22 #spectrometer length in meters
 
-vibmax = 1.16e-10 * 0.08 #maximum vibration amplitude for each fragment
+vibmax = 1e-10 * 0 #maximum vibration amplitude for each fragment
 
-r10 = np.array([0, 0, 0])  #fragment intial position vectors (x, y, z)
-r20 = np.array([-1.16e-10, 0, 0]) 
-r30 = np.array([1.16e-10, 0, 0]) 
+r10 = np.array([0.599596e-10, -0.360886e-10, 0.0691293e-10]) #fragment intial position vectors (x, y, z)
+r20 = np.array([0.033180e-10, 1.822551e-10, -0.644491e-10])  
+r30 = np.array([-1.594965e-10, -0.882540e-10, -0.644491e-10]) 
+
 
 v10 = np.array([0, 0, 0]) # fragment initial velocity vectors (vx, vy, vz)
 v20 = np.array([0, 0, 0])
@@ -42,7 +43,7 @@ vx20, vy20, vz20 = v20
 vx30, vy30, vz30 = v30
 
 t0 = 0           #integration start time
-tmax = 5e-6      #integration stop time
+tmax = 1e-5      #integration stop time
 
 tof1 = np.zeros(num) #create arrays to store output data
 x1 = np.zeros(num)
