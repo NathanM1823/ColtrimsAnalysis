@@ -170,7 +170,457 @@ class ThreeBodyCE:
         ax.set_ylim(-max_dim, max_dim)
         ax.set_aspect('equal')
         ax.grid()
+        
+    def dalitz1(self):
+        epsilon1 = self.ke_tot1 / self.ker
+        epsilon2 = self.ke_tot2 / self.ker
+        epsilon3 = self.ke_tot3 / self.ker
+        x_val = (epsilon2 - epsilon1) / (3**(1/2))
+        y_val = epsilon3 - 1/3
+        print('Dalitz plot data, [(e2 - e1)/sqrt(3), e3 - 1/3]:')
+        print([x_val, y_val])
+        
+    def dalitz2(self):
+        epsilon1 = self.ke_tot1 / self.ker
+        epsilon2 = self.ke_tot2 / self.ker
+        epsilon3 = self.ke_tot3 / self.ker
+        x_val = (epsilon1 - epsilon3) / (3**(1/2))
+        y_val = epsilon2 - 1/3
+        print('Dalitz plot data, [(e1 - e3)/sqrt(3), e2 - 1/3]:')
+        print([x_val, y_val])
+    
+    def dalitz3(self):
+        epsilon1 = self.ke_tot1 / self.ker
+        epsilon2 = self.ke_tot2 / self.ker
+        epsilon3 = self.ke_tot3 / self.ker
+        x_val = (epsilon2 - epsilon3) / (3**(1/2))
+        y_val = epsilon1 - 1/3
+        print('Dalitz plot data, [(e2 - e3)/sqrt(3), e1 - 1/3]:')
+        print([x_val, y_val])
 
+
+class DissocThreeBodyCE:
+    
+    def __init__(self, m1, m2, m3, q1, q2, q3, r10, r20, r30, t0, tmax, dissoc_energy, dissoc_axis, delays, tau):
+        
+        r10 = np.asarray(r10)
+        r20 = np.asarray(r20)
+        r30 = np.asarray(r30)
+        dissoc_axis = np.asarray(dissoc_axis)
+        
+        k = 8.9875517923e9 #Coulomb force constant
+        m1 = m1 * 1.66053903e-27 #convert mass from g/mole to kg
+        m2 = m2 * 1.66053903e-27
+        m3 = m3 * 1.66053903e-27 
+        q1 = q1 * 1.60217662e-19
+        q2 = q2 * 1.60217662e-19
+        q3 = q3 * 1.60217662e-19
+        
+        energy_joules = dissoc_energy * 1.60217662e-19
+        self.energies = []
+        v1 = (2 * energy_joules / (m1 * (m1 / (m2 + m3) + 1)))**(1/2)
+        v2 = (2 * energy_joules / ((m2 + m3) * ((m2 + m3) / m1 + 1)))**(1/2)
+            
+        def coul(r1, q1, m1, r2, q2):
+            '''Accleration from Coulomb force on charge q1 at r1 by charge q2 at r2.'''
+            return k * q1 * q2 * (r1-r2) / np.linalg.norm(r1-r2)**3 / m1
+        
+        def diffeq(t, d):
+            '''Differential equations to feed into solver.'''
+            x1 = d[0] #define all observables
+            y1 = d[1]
+            z1 = d[2]
+            x2 = d[3]
+            y2 = d[4]
+            z2 = d[5]
+            x3 = d[6]
+            y3 = d[7]
+            z3 = d[8]
+            r1 = np.array([x1, y1, z1]) #define current position vector
+            r2 = np.array([x2, y2, z2])
+            r3 = np.array([x3, y3, z3])
+            vx1 = d[9]
+            vy1 = d[10]
+            vz1 = d[11]
+            vx2 = d[12]
+            vy2 = d[13]
+            vz2 = d[14]
+            vx3 = d[15]
+            vy3 = d[16]
+            vz3 = d[17]
+            
+            #calculate accelerations of each fragment
+            dvx1, dvy1, dvz1 = coul(r1, q1, m1, r2, q2) + coul(r1, q1, m1, r3, q3)
+            dvx2, dvy2, dvz2 = coul(r2, q2, m2, r1, q1) + coul(r2, q2, m2, r3, q3)
+            dvx3, dvy3, dvz3 = coul(r3, q3, m3, r1, q1) + coul(r3, q3, m3, r2, q2)
+            
+            return(vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, 
+                   dvx1, dvy1, dvz1, dvx2, dvy2, dvz2, dvx3, dvy3, dvz3)
+        
+        self.size = len(delays)
+        self.ke_tot1 = np.zeros(self.size)
+        self.ke_tot2 = np.zeros(self.size)
+        self.ke_tot3 = np.zeros(self.size)
+        self.p_ion1 = np.zeros((self.size, 3))
+        self.p_ion2 = np.zeros((self.size, 3))
+        self.p_ion3 = np.zeros((self.size, 3))
+        self.ker = np.zeros(self.size)
+        
+        for i in range(len(delays)):
+            delta_r = (v1 + v2) * (delays[i] + (np.exp(-delays[i] / tau) - 1) * tau)
+            r10_dissoc = r10 + delta_r * dissoc_axis
+            
+            x10, y10, z10 = r10_dissoc #unpack fragment initial position vectors
+            x20, y20, z20 = r20
+            x30, y30, z30 = r30
+            
+            v10 = v1 * (1 - np.exp(-delays[i] / tau)) * dissoc_axis
+            v20 = -v2 * (1 - np.exp(-delays[i] / tau)) * dissoc_axis
+            v30 = -v2 * (1 - np.exp(-delays[i] / tau)) * dissoc_axis
+            
+            vx10, vy10, vz10 = v10
+            vx20, vy20, vz20 = v20
+            vx30, vy30, vz30 = v30
+        
+            ivs = [x10, y10, z10, x20, y20, z20, x30, y30, z30, vx10,
+                   vy10, vz10, vx20, vy20, vz20, vx30, vy30, vz30]
+            
+            sol = solve_ivp(diffeq, [t0, tmax], ivs)
+            
+            
+            self.ke_tot1[i] = 0.5 * m1 * (sol.y[9][-1]**2 + sol.y[10][-1]**2 + sol.y[11][-1]**2) / 1.60217662e-19
+            self.ke_tot2[i] = 0.5 * m2 * (sol.y[12][-1]**2 + sol.y[13][-1]**2 + sol.y[14][-1]**2) / 1.60217662e-19
+            self.ke_tot3[i] = 0.5 * m3 * (sol.y[15][-1]**2 + sol.y[16][-1]**2 + sol.y[17][-1]**2) / 1.60217662e-19
+            px1 = m1 * sol.y[9][-1] / 1.99285191410e-24
+            py1 = m1 * sol.y[10][-1] / 1.99285191410e-24
+            pz1 = m1 * sol.y[11][-1] / 1.99285191410e-24
+            px2 = m2 * sol.y[12][-1] / 1.99285191410e-24
+            py2 = m2 * sol.y[13][-1] / 1.99285191410e-24
+            pz2 = m2 * sol.y[14][-1] / 1.99285191410e-24
+            px3 = m3 * sol.y[15][-1] / 1.99285191410e-24
+            py3 = m3 * sol.y[16][-1] / 1.99285191410e-24
+            pz3 = m3 * sol.y[17][-1] / 1.99285191410e-24
+            
+            
+            self.p_ion1[i] = np.array([px1, py1, pz1])
+            self.p_ion2[i] = np.array([px2, py2, pz2])
+            self.p_ion3[i] = np.array([px3, py3, pz3])
+            self.ker[i] = self.ke_tot1[i] + self.ke_tot2[i] + self.ke_tot3[i]
+            
+        self.theta1 = np.zeros(self.size)
+        self.theta2 = np.zeros(self.size)
+        self.theta3 = np.zeros(self.size)
+        
+        for i in range(self.size):
+            self.theta1[i] = (np.arccos(np.dot(self.p_ion1[i], self.p_ion2[i]) / 
+                               np.linalg.norm(self.p_ion1[i]) / 
+                               np.linalg.norm(self.p_ion2[i]))) * 180 / np.pi
+            self.theta2[i] = (np.arccos(np.dot(self.p_ion1[i], self.p_ion3[i]) / 
+                               np.linalg.norm(self.p_ion1[i]) / 
+                               np.linalg.norm(self.p_ion3[i]))) * 180 / np.pi
+            self.theta3[i] = (np.arccos(np.dot(self.p_ion2[i], self.p_ion3[i]) / 
+                               np.linalg.norm(self.p_ion2[i]) / 
+                               np.linalg.norm(self.p_ion3[i]))) * 180 / np.pi
+    
+    def newton(self, norm=False):
+        #relative to ion 1
+        mag1 = np.linalg.norm(self.p_ion1)
+        mag2 = np.linalg.norm(self.p_ion2)
+        mag3 = np.linalg.norm(self.p_ion3)
+        dot1_2 = np.dot(self.p_ion1, self.p_ion2)
+        dot1_3 = np.dot(self.p_ion1, self.p_ion3)
+        
+        if norm:
+            px2 = dot1_2 / mag1**2
+            mag2 = mag2 / mag1
+            py2 = (mag2**2 - px2**2)**(1/2)
+            px3 = dot1_3 / mag1**2
+            mag3 = mag3 / mag1
+            py3 = -(mag3**2 - px3**2)**(1/2)
+            mag1 = 1
+        
+        else:
+            dot1_2 = np.dot(self.p_ion1, self.p_ion2)
+            dot1_3 = np.dot(self.p_ion1, self.p_ion3)
+            px2 = dot1_2 / mag1 
+            py2 = (mag2**2 - px2**2)**(1/2)
+            px3 = dot1_3 / mag1 
+            py3 = -(mag3**2 - px3**2)**(1/2)
+        
+        print('Newton plot values relative to ion 1:')
+        print([mag1, 0])
+        print([px2, py2])
+        print([px3, py3])
+        
+        fig, ax = plt.subplots()
+        ax.scatter([px2, px3, mag1], [py2, py3, 0], marker='x', color='r')
+        ax.quiver(px2, py2, angles='xy', scale_units='xy', scale=1, width=0.005)
+        ax.quiver(px3, py3, angles='xy', scale_units='xy', scale=1, width=0.005)
+        ax.quiver(mag1, 0, angles='xy', scale_units='xy', scale=1, width=0.005)
+        ax.set_title('Newton Plot Relative to Ion 1')
+        
+        if norm:
+            ax.set_xlabel('Relative X momentum')
+            ax.set_ylabel('Relative Y momentum')
+            
+        else:
+            ax.set_xlabel('X momentum (a.u.)')
+            ax.set_ylabel('Y momentum (a.u.)')
+            
+        max_dim = max(px2, py2, px3, py3, mag1) * 1.25
+        ax.set_xlim(-max_dim, max_dim)
+        ax.set_ylim(-max_dim, max_dim)
+        ax.set_aspect('equal')
+        ax.grid()
+        
+    def dalitz1(self):
+        epsilon1 = self.ke_tot1 / self.ker
+        epsilon2 = self.ke_tot2 / self.ker
+        epsilon3 = self.ke_tot3 / self.ker
+        x_val = (epsilon2 - epsilon1) / (3**(1/2))
+        y_val = epsilon3 - 1/3
+        print('Dalitz plot data, [(e2 - e1)/sqrt(3), e3 - 1/3]:')
+        print([x_val, y_val])
+        
+    def dalitz2(self):
+        epsilon1 = self.ke_tot1 / self.ker
+        epsilon2 = self.ke_tot2 / self.ker
+        epsilon3 = self.ke_tot3 / self.ker
+        x_val = (epsilon1 - epsilon3) / (3**(1/2))
+        y_val = epsilon2 - 1/3
+        print('Dalitz plot data, [(e1 - e3)/sqrt(3), e2 - 1/3]:')
+        print([x_val, y_val])
+    
+    def dalitz3(self):
+        epsilon1 = self.ke_tot1 / self.ker
+        epsilon2 = self.ke_tot2 / self.ker
+        epsilon3 = self.ke_tot3 / self.ker
+        x_val = (epsilon2 - epsilon3) / (3**(1/2))
+        y_val = epsilon1 - 1/3
+        print('Dalitz plot data, [(e2 - e3)/sqrt(3), e1 - 1/3]:')
+        print([x_val, y_val])
+        
+
+class DissocRotationThreeBodyCE:
+    
+    def __init__(self, m1, m2, m3, q1, q2, q3, r10, r20, r30, t0, tmax, dissoc_energy, dissoc_axis, tau_v, rotation_axis, rotation_velocity, tau_r, delays):
+        
+        r10 = np.asarray(r10)
+        r20 = np.asarray(r20)
+        r30 = np.asarray(r30)
+        dissoc_axis = np.asarray(dissoc_axis)
+        rotation_axis = np.asarray(rotation_axis)
+        
+        k = 8.9875517923e9 #Coulomb force constant
+        m1 = m1 * 1.66053903e-27 #convert mass from g/mole to kg
+        m2 = m2 * 1.66053903e-27
+        m3 = m3 * 1.66053903e-27 
+        q1 = q1 * 1.60217662e-19
+        q2 = q2 * 1.60217662e-19
+        q3 = q3 * 1.60217662e-19
+        
+        energy_joules = dissoc_energy * 1.60217662e-19
+        self.energies = []
+        v1 = (2 * energy_joules / (m1 * (m1 / (m2 + m3) + 1)))**(1/2)
+        v2 = (2 * energy_joules / ((m2 + m3) * ((m2 + m3) / m1 + 1)))**(1/2)
+        
+        def rotation_matrix(axis, theta):
+            """
+            Return the rotation matrix associated with counterclockwise rotation about
+            the given axis by theta radians.
+            """
+            a = np.cos(theta / 2.0)
+            b, c, d = -axis * np.sin(theta / 2.0)
+            aa, bb, cc, dd = a * a, b * b, c * c, d * d
+            bc, ad, ac, ab, bd, cd = b * c, a * d, a * c, a * b, b * d, c * d
+            return np.array([[aa + bb - cc - dd, 2 * (bc + ad), 2 * (bd - ac)],
+                             [2 * (bc - ad), aa + cc - bb - dd, 2 * (cd + ab)],
+                             [2 * (bd + ac), 2 * (cd - ab), aa + dd - bb - cc]])
+
+        def coul(r1, q1, m1, r2, q2):
+            '''Accleration from Coulomb force on charge q1 at r1 by charge q2 at r2.'''
+            return k * q1 * q2 * (r1-r2) / np.linalg.norm(r1-r2)**3 / m1
+        
+        def diffeq(t, d):
+            '''Differential equations to feed into solver.'''
+            x1 = d[0] #define all observables
+            y1 = d[1]
+            z1 = d[2]
+            x2 = d[3]
+            y2 = d[4]
+            z2 = d[5]
+            x3 = d[6]
+            y3 = d[7]
+            z3 = d[8]
+            r1 = np.array([x1, y1, z1]) #define current position vector
+            r2 = np.array([x2, y2, z2])
+            r3 = np.array([x3, y3, z3])
+            vx1 = d[9]
+            vy1 = d[10]
+            vz1 = d[11]
+            vx2 = d[12]
+            vy2 = d[13]
+            vz2 = d[14]
+            vx3 = d[15]
+            vy3 = d[16]
+            vz3 = d[17]
+            
+            #calculate accelerations of each fragment
+            dvx1, dvy1, dvz1 = coul(r1, q1, m1, r2, q2) + coul(r1, q1, m1, r3, q3)
+            dvx2, dvy2, dvz2 = coul(r2, q2, m2, r1, q1) + coul(r2, q2, m2, r3, q3)
+            dvx3, dvy3, dvz3 = coul(r3, q3, m3, r1, q1) + coul(r3, q3, m3, r2, q2)
+            
+            return(vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, 
+                   dvx1, dvy1, dvz1, dvx2, dvy2, dvz2, dvx3, dvy3, dvz3)
+        
+        self.size = len(delays)
+        self.ke_tot1 = np.zeros(self.size)
+        self.ke_tot2 = np.zeros(self.size)
+        self.ke_tot3 = np.zeros(self.size)
+        self.p_ion1 = np.zeros((self.size, 3))
+        self.p_ion2 = np.zeros((self.size, 3))
+        self.p_ion3 = np.zeros((self.size, 3))
+        self.ker = np.zeros(self.size)
+        
+        for i in range(len(delays)):
+            delta_r = (v1 + v2) * (delays[i] + (np.exp(-delays[i] / tau_v) - 1) * tau_v)
+            r10_dissoc = r10 + delta_r * dissoc_axis
+            theta = rotation_velocity * (1 - np.exp(-delays[i] / tau_r)) * delays[i]
+            rot = rotation_matrix(rotation_axis, theta)
+            r20_rot = np.dot(rot, r20)
+            r30_rot = np.dot(rot, r30)
+            
+            x10, y10, z10 = r10_dissoc #unpack fragment initial position vectors
+            x20, y20, z20 = r20_rot
+            x30, y30, z30 = r30_rot
+            
+            v10 = v1 * (1 - np.exp(-delays[i] / tau_v)) * dissoc_axis
+            v20 = -v2 * (1 - np.exp(-delays[i] / tau_v)) * dissoc_axis
+            v30 = -v2 * (1 - np.exp(-delays[i] / tau_v)) * dissoc_axis
+            
+            vx10, vy10, vz10 = v10
+            vx20, vy20, vz20 = v20
+            vx30, vy30, vz30 = v30
+        
+            ivs = [x10, y10, z10, x20, y20, z20, x30, y30, z30, vx10,
+                   vy10, vz10, vx20, vy20, vz20, vx30, vy30, vz30]
+            
+            sol = solve_ivp(diffeq, [t0, tmax], ivs)
+            
+            
+            self.ke_tot1[i] = 0.5 * m1 * (sol.y[9][-1]**2 + sol.y[10][-1]**2 + sol.y[11][-1]**2) / 1.60217662e-19
+            self.ke_tot2[i] = 0.5 * m2 * (sol.y[12][-1]**2 + sol.y[13][-1]**2 + sol.y[14][-1]**2) / 1.60217662e-19
+            self.ke_tot3[i] = 0.5 * m3 * (sol.y[15][-1]**2 + sol.y[16][-1]**2 + sol.y[17][-1]**2) / 1.60217662e-19
+            px1 = m1 * sol.y[9][-1] / 1.99285191410e-24
+            py1 = m1 * sol.y[10][-1] / 1.99285191410e-24
+            pz1 = m1 * sol.y[11][-1] / 1.99285191410e-24
+            px2 = m2 * sol.y[12][-1] / 1.99285191410e-24
+            py2 = m2 * sol.y[13][-1] / 1.99285191410e-24
+            pz2 = m2 * sol.y[14][-1] / 1.99285191410e-24
+            px3 = m3 * sol.y[15][-1] / 1.99285191410e-24
+            py3 = m3 * sol.y[16][-1] / 1.99285191410e-24
+            pz3 = m3 * sol.y[17][-1] / 1.99285191410e-24
+            
+            
+            self.p_ion1[i] = np.array([px1, py1, pz1])
+            self.p_ion2[i] = np.array([px2, py2, pz2])
+            self.p_ion3[i] = np.array([px3, py3, pz3])
+            self.ker[i] = self.ke_tot1[i] + self.ke_tot2[i] + self.ke_tot3[i]
+            
+        self.theta1 = np.zeros(self.size)
+        self.theta2 = np.zeros(self.size)
+        self.theta3 = np.zeros(self.size)
+        
+        for i in range(self.size):
+            self.theta1[i] = (np.arccos(np.dot(self.p_ion1[i], self.p_ion2[i]) / 
+                               np.linalg.norm(self.p_ion1[i]) / 
+                               np.linalg.norm(self.p_ion2[i]))) * 180 / np.pi
+            self.theta2[i] = (np.arccos(np.dot(self.p_ion1[i], self.p_ion3[i]) / 
+                               np.linalg.norm(self.p_ion1[i]) / 
+                               np.linalg.norm(self.p_ion3[i]))) * 180 / np.pi
+            self.theta3[i] = (np.arccos(np.dot(self.p_ion2[i], self.p_ion3[i]) / 
+                               np.linalg.norm(self.p_ion2[i]) / 
+                               np.linalg.norm(self.p_ion3[i]))) * 180 / np.pi
+    
+    def newton(self, norm=False):
+        #relative to ion 1
+        mag1 = np.linalg.norm(self.p_ion1)
+        mag2 = np.linalg.norm(self.p_ion2)
+        mag3 = np.linalg.norm(self.p_ion3)
+        dot1_2 = np.dot(self.p_ion1, self.p_ion2)
+        dot1_3 = np.dot(self.p_ion1, self.p_ion3)
+        
+        if norm:
+            px2 = dot1_2 / mag1**2
+            mag2 = mag2 / mag1
+            py2 = (mag2**2 - px2**2)**(1/2)
+            px3 = dot1_3 / mag1**2
+            mag3 = mag3 / mag1
+            py3 = -(mag3**2 - px3**2)**(1/2)
+            mag1 = 1
+        
+        else:
+            dot1_2 = np.dot(self.p_ion1, self.p_ion2)
+            dot1_3 = np.dot(self.p_ion1, self.p_ion3)
+            px2 = dot1_2 / mag1 
+            py2 = (mag2**2 - px2**2)**(1/2)
+            px3 = dot1_3 / mag1 
+            py3 = -(mag3**2 - px3**2)**(1/2)
+        
+        print('Newton plot values relative to ion 1:')
+        print([mag1, 0])
+        print([px2, py2])
+        print([px3, py3])
+        
+        fig, ax = plt.subplots()
+        ax.scatter([px2, px3, mag1], [py2, py3, 0], marker='x', color='r')
+        ax.quiver(px2, py2, angles='xy', scale_units='xy', scale=1, width=0.005)
+        ax.quiver(px3, py3, angles='xy', scale_units='xy', scale=1, width=0.005)
+        ax.quiver(mag1, 0, angles='xy', scale_units='xy', scale=1, width=0.005)
+        ax.set_title('Newton Plot Relative to Ion 1')
+        
+        if norm:
+            ax.set_xlabel('Relative X momentum')
+            ax.set_ylabel('Relative Y momentum')
+            
+        else:
+            ax.set_xlabel('X momentum (a.u.)')
+            ax.set_ylabel('Y momentum (a.u.)')
+            
+        max_dim = max(px2, py2, px3, py3, mag1) * 1.25
+        ax.set_xlim(-max_dim, max_dim)
+        ax.set_ylim(-max_dim, max_dim)
+        ax.set_aspect('equal')
+        ax.grid()
+        
+    def dalitz1(self):
+        epsilon1 = self.ke_tot1 / self.ker
+        epsilon2 = self.ke_tot2 / self.ker
+        epsilon3 = self.ke_tot3 / self.ker
+        x_val = (epsilon2 - epsilon1) / (3**(1/2))
+        y_val = epsilon3 - 1/3
+        print('Dalitz plot data, [(e2 - e1)/sqrt(3), e3 - 1/3]:')
+        print([x_val, y_val])
+        
+    def dalitz2(self):
+        epsilon1 = self.ke_tot1 / self.ker
+        epsilon2 = self.ke_tot2 / self.ker
+        epsilon3 = self.ke_tot3 / self.ker
+        x_val = (epsilon1 - epsilon3) / (3**(1/2))
+        y_val = epsilon2 - 1/3
+        print('Dalitz plot data, [(e1 - e3)/sqrt(3), e2 - 1/3]:')
+        print([x_val, y_val])
+    
+    def dalitz3(self):
+        epsilon1 = self.ke_tot1 / self.ker
+        epsilon2 = self.ke_tot2 / self.ker
+        epsilon3 = self.ke_tot3 / self.ker
+        x_val = (epsilon2 - epsilon3) / (3**(1/2))
+        y_val = epsilon1 - 1/3
+        print('Dalitz plot data, [(e2 - e3)/sqrt(3), e1 - 1/3]:')
+        print([x_val, y_val])
+        
+        
 class ThreeBodyCEIncomplete:
     
     def __init__(self, m1, m2, m3, q1, q2, q3, r10, r20, r10_frag, r20_frag, 
@@ -536,6 +986,8 @@ class ThreeBodyCEIncomplete:
                self.ion2, self.ion3), 'Kinetic Energy (eV)', 'Counts', 
                binsize=binsize)
         ax.legend([self.ion1, self.ion2, self.ion3, 'Total KER'])
+
+
 
 
 class ThreeBodyPartialCharges:
